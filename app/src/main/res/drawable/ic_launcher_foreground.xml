@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Cordón central: motivo de quipu -->
+    <path
+        android:pathData="M54,25 L54,83"
+        android:strokeColor="#F9F8F4"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M38,40 L70,40"
+        android:strokeColor="#F9F8F4"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M34,55 L74,55"
+        android:strokeColor="#F9F8F4"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M42,70 L66,70"
+        android:strokeColor="#F9F8F4"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <!-- Nudos -->
+    <path
+        android:fillColor="#9ED9C8"
+        android:pathData="M38,36.5a3.5,3.5 0,1 1,0 7a3.5,3.5 0,1 1,0 -7z" />
+    <path
+        android:fillColor="#9ED9C8"
+        android:pathData="M70,36.5a3.5,3.5 0,1 1,0 7a3.5,3.5 0,1 1,0 -7z" />
+    <path
+        android:fillColor="#9ED9C8"
+        android:pathData="M34,51.5a3.5,3.5 0,1 1,0 7a3.5,3.5 0,1 1,0 -7z" />
+    <path
+        android:fillColor="#9ED9C8"
+        android:pathData="M74,51.5a3.5,3.5 0,1 1,0 7a3.5,3.5 0,1 1,0 -7z" />
+    <path
+        android:fillColor="#9ED9C8"
+        android:pathData="M42,66.5a3.5,3.5 0,1 1,0 7a3.5,3.5 0,1 1,0 -7z" />
+    <path
+        android:fillColor="#9ED9C8"
+        android:pathData="M66,66.5a3.5,3.5 0,1 1,0 7a3.5,3.5 0,1 1,0 -7z" />
+</vector>

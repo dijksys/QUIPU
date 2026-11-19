@@ -1,0 +1,188 @@
+<resources>
+    <string name="app_name">QUIPU</string>
+
+    <!-- Navegación y acciones comunes -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_notes">Notas</string>
+    <string name="nav_reminders">Recordatorios</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="action_back">Volver</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_accept">Aceptar</string>
+    <string name="action_clear">Borrar búsqueda</string>
+    <string name="action_undo">Deshacer</string>
+    <string name="action_more_options">Más opciones</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_edit">Editar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_see_all">Ver todo</string>
+    <string name="action_back_to_notes">Volver a notas</string>
+    <string name="error_generic">No se pudo completar la acción. Inténtalo de nuevo.</string>
+
+    <!-- Inicio -->
+    <string name="home_title">Inicio</string>
+    <string name="home_subtitle">Tus notas y recordatorios, en un solo lugar.</string>
+    <string name="home_empty_title">Tu espacio está listo</string>
+    <string name="home_empty_message">Empieza con una nota rápida o programa tu primer recordatorio.</string>
+    <string name="home_new_note">Nueva nota</string>
+    <string name="home_new_reminder">Nuevo recordatorio</string>
+    <string name="home_pinned_title">Fijadas</string>
+    <string name="home_recent_title">Recientes</string>
+    <string name="home_upcoming_title">Próximos recordatorios</string>
+    <string name="home_no_upcoming_reminders">No hay recordatorios próximos.</string>
+    <string name="home_notes_count_label">Notas</string>
+    <string name="home_pending_count_label">Pendientes</string>
+
+    <!-- Notas -->
+    <string name="notes_title">Notas</string>
+    <string name="notes_archived_title">Archivadas</string>
+    <string name="notes_trash_title">Papelera</string>
+    <string name="notes_open_archive">Abrir archivadas</string>
+    <string name="notes_open_trash">Abrir papelera</string>
+    <string name="notes_new_note">Crear nota</string>
+    <string name="notes_search_placeholder">Buscar en notas…</string>
+    <string name="notes_pinned_section">Fijadas</string>
+    <string name="notes_others_section">Otras notas</string>
+    <string name="notes_search_empty_title">Sin resultados</string>
+    <string name="notes_search_empty_message">Prueba con otras palabras o revisa el contenido de tus notas.</string>
+    <string name="notes_archived_empty_title">No hay notas archivadas</string>
+    <string name="notes_archived_empty_message">Las notas que archives aparecerán aquí para mantenerlas fuera del camino.</string>
+    <string name="notes_trash_empty_title">La papelera está vacía</string>
+    <string name="notes_trash_empty_message">Las notas eliminadas se conservan aquí antes de borrarlas definitivamente.</string>
+    <string name="notes_empty_title">Aún no hay notas</string>
+    <string name="notes_empty_message">Crea una nota para capturar una idea, una lista o cualquier pensamiento.</string>
+    <string name="notes_empty_action">Crear mi primera nota</string>
+    <string name="note_pinned">Nota fijada</string>
+    <string name="note_unpinned">Nota desfijada</string>
+    <string name="note_pinned_label">Fijada</string>
+    <string name="note_last_modified">Editada %1$s</string>
+    <string name="note_pin">Fijar nota</string>
+    <string name="note_unpin">Desfijar nota</string>
+    <string name="note_archive">Archivar</string>
+    <string name="note_unarchive">Desarchivar</string>
+    <string name="note_move_to_trash">Mover a la papelera</string>
+    <string name="note_restore">Restaurar</string>
+    <string name="note_delete_permanently">Eliminar definitivamente</string>
+    <string name="note_delete_dialog_title">Eliminar definitivamente</string>
+    <string name="note_delete_dialog_message">«%1$s» se borrará de forma permanente. Esta acción no se puede deshacer.</string>
+    <string name="note_deleted_permanently">Nota eliminada definitivamente</string>
+    <string name="note_archived">Nota archivada</string>
+    <string name="note_unarchived">Nota desarchivada</string>
+    <string name="note_trashed">Nota movida a la papelera</string>
+    <string name="note_restored">Nota restaurada</string>
+    <string name="trash_empty_action">Vaciar papelera</string>
+    <string name="trash_empty_dialog_title">Vaciar la papelera</string>
+    <string name="trash_empty_dialog_message">Todas las notas de la papelera se eliminarán definitivamente. Los recordatorios vinculados se conservarán sin nota.</string>
+    <string name="trash_emptied">Papelera vaciada</string>
+
+    <!-- Editor de notas -->
+    <string name="note_editor_saving">Guardando…</string>
+    <string name="note_editor_saved">Guardado</string>
+    <string name="note_editor_new">Nueva nota</string>
+    <string name="note_editor_title_placeholder">Título</string>
+    <string name="note_editor_content_placeholder">Empieza a escribir…</string>
+    <string name="note_editor_created">Creada %1$s</string>
+    <string name="note_editor_modified">Modificada %1$s</string>
+    <string name="note_create_reminder">Crear recordatorio vinculado</string>
+    <string name="note_write_before_reminder">Escribe algo en la nota antes de crear un recordatorio.</string>
+    <string name="note_not_found_title">Nota no encontrada</string>
+    <string name="note_not_found_message">Puede que la nota se haya eliminado.</string>
+    <string name="note_trash_dialog_title">Mover a la papelera</string>
+    <string name="note_trash_dialog_message">Podrás restaurar la nota desde la papelera.</string>
+
+    <!-- Recordatorios -->
+    <string name="reminders_title">Recordatorios</string>
+    <string name="reminders_new_reminder">Nuevo recordatorio</string>
+    <string name="reminders_notifications_off_title">Notificaciones desactivadas</string>
+    <string name="reminders_notifications_off_message">Los recordatorios se guardan, pero no se mostrarán avisos hasta que actives las notificaciones en Ajustes.</string>
+    <string name="reminders_open_settings">Ajustes</string>
+    <string name="reminders_notification_permission_title">Activa las notificaciones</string>
+    <string name="reminders_notification_permission_message">Android necesita tu permiso para mostrarte los recordatorios a su hora.</string>
+    <string name="reminders_allow_notifications">Permitir notificaciones</string>
+    <string name="reminders_exact_alarm_title">Alarmas exactas no permitidas</string>
+    <string name="reminders_exact_alarm_message">Sin este permiso, Android puede retrasar los avisos. Puedes concederlo o seguir usando la programación aproximada.</string>
+    <string name="reminders_allow_exact_alarms">Permitir alarmas exactas</string>
+    <string name="reminder_filter_pending">Pendientes</string>
+    <string name="reminder_filter_overdue">Vencidos</string>
+    <string name="reminder_filter_completed">Completados</string>
+    <string name="reminder_filter_cancelled">Cancelados</string>
+    <string name="reminders_empty_pending_title">Sin recordatorios pendientes</string>
+    <string name="reminders_empty_pending_message">Programa un aviso para una fecha y hora concretas.</string>
+    <string name="reminders_empty_action">Crear recordatorio</string>
+    <string name="reminders_empty_overdue_title">Nada vencido</string>
+    <string name="reminders_empty_overdue_message">Los recordatorios que ya pasaron su hora aparecerán aquí.</string>
+    <string name="reminders_empty_completed_title">Aún no hay completados</string>
+    <string name="reminders_empty_completed_message">Marca un recordatorio como completado para verlo en esta lista.</string>
+    <string name="reminders_empty_cancelled_title">Nada cancelado</string>
+    <string name="reminders_empty_cancelled_message">Los recordatorios cancelados se conservan aquí.</string>
+    <string name="reminder_completed_message">Recordatorio completado</string>
+    <string name="reminder_cancelled_message">Recordatorio cancelado</string>
+    <string name="reminder_deleted_message">Recordatorio eliminado</string>
+    <string name="reminder_delete_dialog_title">Eliminar recordatorio</string>
+    <string name="reminder_delete_dialog_message">«%1$s» se eliminará de forma permanente.</string>
+    <string name="reminder_complete">Marcar como completado</string>
+    <string name="reminder_cancel">Cancelar recordatorio</string>
+    <string name="reminder_status_overdue">Vencido</string>
+    <string name="reminder_status_completed">Completado</string>
+    <string name="reminder_status_cancelled">Cancelado</string>
+    <string name="reminder_linked_note">Nota vinculada</string>
+
+    <!-- Editor de recordatorios -->
+    <string name="reminder_editor_new_title">Nuevo recordatorio</string>
+    <string name="reminder_editor_edit_title">Editar recordatorio</string>
+    <string name="reminder_not_found_title">Recordatorio no encontrado</string>
+    <string name="reminder_not_found_message">Puede que el recordatorio se haya eliminado.</string>
+    <string name="reminder_error_title">Revisa el recordatorio</string>
+    <string name="reminder_error_title_required">Escribe un título para el recordatorio.</string>
+    <string name="reminder_error_time_in_past">Elige una fecha y hora futuras.</string>
+    <string name="reminder_error_save_failed">No se pudo guardar el recordatorio. Inténtalo de nuevo.</string>
+    <string name="reminder_error_not_found">El recordatorio ya no existe.</string>
+    <string name="reminder_editor_notifications_off_title">Las notificaciones están desactivadas</string>
+    <string name="reminder_editor_notifications_off_message">El recordatorio se guardará, pero no sonará ningún aviso. Actívalas en Ajustes.</string>
+    <string name="reminder_editor_title_label">Título</string>
+    <string name="reminder_editor_title_placeholder">¿Qué quieres recordar?</string>
+    <string name="reminder_editor_description_label">Descripción (opcional)</string>
+    <string name="reminder_editor_description_placeholder">Añade algún detalle…</string>
+    <string name="reminder_editor_date_label">Fecha</string>
+    <string name="reminder_editor_time_label">Hora</string>
+    <string name="reminder_editor_no_note">Sin nota</string>
+    <string name="reminder_editor_linked_note">Nota vinculada</string>
+    <string name="reminder_editor_notification_permission_title">Sin permiso de notificaciones</string>
+    <string name="reminder_editor_notification_permission_message">Concédelo para que el aviso aparezca a la hora programada.</string>
+    <string name="reminder_editor_exact_alarm_title">Programación aproximada</string>
+    <string name="reminder_editor_exact_alarm_message">Sin alarmas exactas, Android puede retrasar el aviso. El recordatorio se guardará igualmente.</string>
+    <string name="reminder_editor_reactivate_hint">Al guardar cambios, el recordatorio volverá a estar pendiente.</string>
+    <string name="reminder_editor_saving">Guardando…</string>
+    <string name="reminder_editor_save">Guardar recordatorio</string>
+    <string name="reminder_editor_save_changes">Guardar cambios</string>
+    <string name="reminder_pick_date">Seleccionar fecha</string>
+    <string name="reminder_pick_time">Seleccionar hora</string>
+    <string name="reminder_editor_choose_note">Vincular una nota</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_appearance_title">Apariencia</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_theme_system">Automático</string>
+    <string name="settings_notifications_title">Notificaciones</string>
+    <string name="settings_notifications_enable">Recordatorios activos</string>
+    <string name="settings_notifications_enable_hint">Al desactivarlos se cancelan las alarmas, pero los recordatorios se conservan.</string>
+    <string name="settings_notification_permission">Permiso de notificaciones</string>
+    <string name="settings_exact_alarm_permission">Alarmas exactas</string>
+    <string name="settings_permission_granted">Concedido</string>
+    <string name="settings_permission_missing">No concedido</string>
+    <string name="settings_permission_not_needed">No necesario</string>
+    <string name="settings_permission_request">Permitir</string>
+    <string name="settings_permission_allow">Permitir</string>
+    <string name="settings_exact_alarm_explanation">Sin alarmas exactas, Android puede agrupar o retrasar los avisos para ahorrar batería. La app seguirá programándolos con precisión aproximada.</string>
+    <string name="settings_about_title">Acerca de</string>
+    <string name="settings_version">Versión %1$s</string>
+    <string name="settings_privacy_message">Tus notas y recordatorios se guardan solo en este dispositivo. No hay cuentas ni servidores.</string>
+    <string name="settings_offline_message">La app funciona completamente sin conexión a Internet.</string>
+
+    <!-- Notificaciones -->
+    <string name="notification_channel_reminders">Recordatorios</string>
+    <string name="notification_channel_reminders_description">Avisos de recordatorios programados</string>
+    <string name="notification_default_text">Tienes un recordatorio pendiente.</string>
+</resources>

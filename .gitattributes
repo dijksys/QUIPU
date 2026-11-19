@@ -1,0 +1,7 @@
+# Normalización de finales de línea y binarios
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.jar binary
+*.webp binary
+*.png binary

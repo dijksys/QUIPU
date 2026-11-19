@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="quipu_window_background">#111412</color>
+    <color name="quipu_accent">#9ED9C8</color>
+</resources>

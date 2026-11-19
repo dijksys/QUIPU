@@ -1,0 +1,86 @@
+# Funcionalidades
+
+Estado de la Fase 1 de QUIPU.
+
+## Implementado
+
+### Notas
+
+- [x] Crear notas con ID UUID.
+- [x] Editar título y contenido.
+- [x] Guardado automático con debounce de 600 ms.
+- [x] Volcado inmediato al salir y borrador en `SavedStateHandle`.
+- [x] Fijar y desfijar notas.
+- [x] Archivar y desarchivar.
+- [x] Mover a papelera con opción de deshacer.
+- [x] Restaurar notas eliminadas.
+- [x] Eliminar definitivamente y vaciar la papelera con confirmación.
+- [x] Buscar por título y contenido.
+- [x] Fechas de creación y última modificación visibles.
+- [x] Listados de activas, archivadas y papelera.
+
+### Recordatorios
+
+- [x] Título y descripción opcional.
+- [x] Fecha y hora con selectores Material 3.
+- [x] Asociación opcional a una nota activa.
+- [x] Edición y reprogramación.
+- [x] Completar, cancelar y eliminar.
+- [x] Estados pendiente, vencido, completado y cancelado.
+- [x] Notificaciones locales con canal propio.
+- [x] Permiso de notificaciones con explicación y acceso a ajustes.
+- [x] Permiso de alarmas exactas con alternativa aproximada explicada.
+- [x] Reprogramación tras reinicio, cambio de hora/zona y actualización.
+- [x] Prevención de notificaciones duplicadas.
+- [x] Apertura del recordatorio al pulsar la notificación.
+
+### Inicio
+
+- [x] Resumen de notas y recordatorios pendientes.
+- [x] Notas fijadas.
+- [x] Notas recientes.
+- [x] Próximos recordatorios.
+- [x] Accesos rápidos para crear nota o recordatorio.
+
+### Ajustes
+
+- [x] Tema claro, oscuro y automático.
+- [x] Interruptor global de notificaciones.
+- [x] Estado y solicitud de permisos de notificaciones y alarmas exactas.
+- [x] Información de versión, privacidad y funcionamiento sin conexión.
+
+### Calidad
+
+- [x] Arquitectura MVVM + Repository + casos de uso.
+- [x] Hilt, KSP, Room, DataStore y Navigation Compose.
+- [x] Pruebas unitarias de casos de uso y ViewModels.
+- [x] Pruebas instrumentadas de DAOs.
+- [x] Pruebas instrumentadas de estados vacíos.
+- [x] Pruebas de flujo de usuario de nota y recordatorio.
+- [x] Prueba de integración de alarma y notificación en emulador.
+- [x] `lintDebug` sin errores.
+- [x] Documentación de arquitectura y permisos.
+
+## Pendiente para fases posteriores
+
+- [ ] Recordatorios recurrentes (diarios, semanales, personalizados).
+- [ ] Búsqueda avanzada con FTS.
+- [ ] Exportación e importación de datos.
+- [ ] Copia de seguridad en la nube opcional.
+- [ ] Widgets de pantalla de inicio.
+- [ ] Adjuntos, imágenes y listas de verificación.
+- [ ] Notas colaborativas o multiusuario.
+- [ ] Localización a otros idiomas.
+- [ ] Sincronización entre dispositivos.
+- [ ] Posponer recordatorios desde la notificación.
+- [ ] Pruebas de accesibilidad automatizadas.
+
+## Limitaciones actuales
+
+- Las alarmas exactas dependen del permiso del sistema y del fabricante.
+- Si el usuario deniega las notificaciones, los recordatorios se guardan pero no
+  generan avisos.
+- La eliminación definitiva de una nota desvincula sus recordatorios, no los
+  elimina.
+- La papelera no tiene purga automática por antigüedad.
+- La interfaz está en español y no se han añadido traducciones.
