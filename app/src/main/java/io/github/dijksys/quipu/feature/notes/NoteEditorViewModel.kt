@@ -51,7 +51,11 @@ class NoteEditorViewModel @Inject constructor(
     }
 
     private val _uiState = MutableStateFlow(
-        NoteEditorUiState(noteId = noteId, isNew = initialIsNew, isLoading = true),
+        NoteEditorUiState(
+            noteId = noteId,
+            isNewSession = initialIsNew,
+            isLoading = true,
+        ),
     )
     val uiState = _uiState.asStateFlow()
 
@@ -59,7 +63,7 @@ class NoteEditorViewModel @Inject constructor(
     val events = eventChannel.receiveAsFlow()
 
     private var currentNote: Note? = null
-    private var autoSaveJob: Job? = null
+    private var debounceJob: Job? = null
     private val saveMutex = Mutex()
 
     init {
@@ -70,91 +74,148 @@ class NoteEditorViewModel @Inject constructor(
 
             if (storedNote != null) {
                 currentNote = storedNote
+                val restoredTitle = draftTitle ?: storedNote.title
+                val restoredContent = draftContent ?: storedNote.content
+                val hasPendingDraft = restoredTitle.trim() != storedNote.title ||
+                    restoredContent != storedNote.content
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        isNew = false,
-                        title = draftTitle ?: storedNote.title,
-                        content = draftContent ?: storedNote.content,
+                        isNewSession = initialIsNew,
+                        isPersisted = true,
+                        title = restoredTitle,
+                        content = restoredContent,
                         isPinned = storedNote.isPinned,
                         isArchived = storedNote.isArchived,
-                        lastSavedAt = storedNote.updatedAt,
+                        saveStatus = if (hasPendingDraft) {
+                            NoteSaveStatus.UNSAVED
+                        } else {
+                            NoteSaveStatus.SAVED
+                        },
                         createdAt = storedNote.createdAt,
+                        updatedAt = storedNote.updatedAt,
                     )
                 }
+                if (hasPendingDraft) ensureAutoSaveScheduled()
             } else if (initialIsNew) {
+                val restoredTitle = draftTitle.orEmpty()
+                val restoredContent = draftContent.orEmpty()
+                val hasText = restoredTitle.isNotBlank() || restoredContent.isNotBlank()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        isNew = true,
-                        title = draftTitle.orEmpty(),
-                        content = draftContent.orEmpty(),
+                        isNewSession = true,
+                        isPersisted = false,
+                        title = restoredTitle,
+                        content = restoredContent,
+                        saveStatus = if (hasText) {
+                            NoteSaveStatus.UNSAVED
+                        } else {
+                            NoteSaveStatus.EMPTY
+                        },
                     )
                 }
+                if (hasText) ensureAutoSaveScheduled()
             } else {
-                _uiState.update { it.copy(isLoading = false, isMissing = true) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isMissing = true,
+                        isNewSession = false,
+                    )
+                }
             }
         }
     }
 
     fun onTitleChange(value: String) {
-        _uiState.update { it.copy(title = value) }
+        applyEdit { it.copy(title = value) }
         savedStateHandle[KEY_DRAFT_TITLE] = value
-        scheduleAutoSave()
     }
 
     fun onContentChange(value: String) {
-        _uiState.update { it.copy(content = value) }
+        applyEdit { it.copy(content = value) }
         savedStateHandle[KEY_DRAFT_CONTENT] = value
-        scheduleAutoSave()
     }
 
     /** Cancela el debounce y escribe inmediatamente (al salir de la pantalla). */
     suspend fun saveNow(): String? {
-        autoSaveJob?.cancel()
+        cancelDebounce()
         persist()
-        return currentNote?.id
+        return if (_uiState.value.saveStatus == NoteSaveStatus.ERROR) {
+            null
+        } else {
+            currentNote?.id
+        }
     }
 
+    /** Persiste al pasar la aplicación a segundo plano sin cancelar una escritura activa. */
     fun flush() {
-        autoSaveJob?.cancel()
+        cancelDebounce()
+        viewModelScope.launch { persist() }
+    }
+
+    /** Reintenta explícitamente después de un error de persistencia. */
+    fun retrySave() {
+        cancelDebounce()
         viewModelScope.launch { persist() }
     }
 
     fun togglePin() {
-        autoSaveJob?.cancel()
+        cancelDebounce()
         viewModelScope.launch {
-            persist()
-            val note = currentNote ?: return@launch
+            val note = persist() ?: return@launch
+            if (_uiState.value.saveStatus != NoteSaveStatus.SAVED) return@launch
+
             val pinned = !note.isPinned
             runCatching {
                 togglePin(note.id, pinned)
-                currentNote = note.copy(isPinned = pinned)
-                _uiState.update { it.copy(isPinned = pinned) }
+                val refreshed = getNote(note.id)
+                currentNote = refreshed ?: note.copy(isPinned = pinned)
+                _uiState.update {
+                    it.copy(
+                        isPinned = pinned,
+                        isArchived = refreshed?.isArchived ?: it.isArchived,
+                        createdAt = refreshed?.createdAt ?: it.createdAt,
+                        updatedAt = refreshed?.updatedAt ?: it.updatedAt,
+                    )
+                }
                 eventChannel.send(NoteEditorEvent.PinChanged(pinned))
             }.onFailure { eventChannel.send(NoteEditorEvent.Failure) }
         }
     }
 
     fun setArchived(archive: Boolean) {
-        autoSaveJob?.cancel()
+        cancelDebounce()
         viewModelScope.launch {
-            persist()
-            val note = currentNote ?: return@launch
+            val note = persist() ?: return@launch
+            if (_uiState.value.saveStatus != NoteSaveStatus.SAVED) return@launch
+
             runCatching {
                 archiveNote(note.id, archive)
-                // Se relee para que el siguiente autoguardado no revierta el archivado.
-                currentNote = getNote(note.id)
-                _uiState.update { it.copy(isArchived = archive) }
+                val refreshed = getNote(note.id)
+                currentNote = refreshed ?: note
+                _uiState.update {
+                    it.copy(
+                        isArchived = refreshed?.isArchived ?: archive,
+                        isPinned = refreshed?.isPinned ?: it.isPinned,
+                        createdAt = refreshed?.createdAt ?: it.createdAt,
+                        updatedAt = refreshed?.updatedAt ?: it.updatedAt,
+                    )
+                }
                 eventChannel.send(NoteEditorEvent.ArchiveChanged(archive))
             }.onFailure { eventChannel.send(NoteEditorEvent.Failure) }
         }
     }
 
     fun moveToTrash() {
-        autoSaveJob?.cancel()
+        cancelDebounce()
         viewModelScope.launch {
-            if (_uiState.value.hasText) persist()
+            if (_uiState.value.hasText) {
+                val saved = persist() ?: return@launch
+                if (_uiState.value.saveStatus == NoteSaveStatus.ERROR) return@launch
+                currentNote = currentNote ?: saved
+            }
             runCatching {
                 currentNote?.let { deleteNote(it.id) }
                 eventChannel.send(NoteEditorEvent.Deleted)
@@ -162,43 +223,120 @@ class NoteEditorViewModel @Inject constructor(
         }
     }
 
+    private fun applyEdit(transform: (NoteEditorUiState) -> NoteEditorUiState) {
+        _uiState.update { current ->
+            val edited = transform(current).copy(justCreated = false)
+            edited.copy(
+                saveStatus = if (!edited.isPersisted && !edited.hasText) {
+                    NoteSaveStatus.EMPTY
+                } else {
+                    NoteSaveStatus.UNSAVED
+                },
+            )
+        }
+
+        if (_uiState.value.saveStatus == NoteSaveStatus.UNSAVED) {
+            scheduleAutoSave()
+        } else {
+            cancelDebounce()
+        }
+    }
+
     private fun scheduleAutoSave() {
-        autoSaveJob?.cancel()
-        autoSaveJob = viewModelScope.launch {
+        debounceJob?.cancel()
+        startDebounce()
+    }
+
+    private fun ensureAutoSaveScheduled() {
+        if (debounceJob?.isActive == true) return
+        startDebounce()
+    }
+
+    private fun startDebounce() {
+        debounceJob = viewModelScope.launch {
             delay(AUTO_SAVE_DELAY_MILLIS)
+            // La escritura queda fuera del job de debounce para que nuevas
+            // pulsaciones no cancelen una operación ya iniciada.
+            debounceJob = null
             persist()
         }
     }
 
-    private suspend fun persist(): Note? = saveMutex.withLock {
-        val state = _uiState.value
-        if (state.isMissing) return@withLock null
-        if (!state.hasText && currentNote == null) return@withLock null
+    private fun cancelDebounce() {
+        debounceJob?.cancel()
+        debounceJob = null
+    }
 
-        _uiState.update { it.copy(isSaving = true) }
-        return try {
-            val existing = currentNote
-            val saved = if (existing == null) {
-                createNote(state.title, state.content, noteId)
-            } else {
-                updateNote(existing.copy(title = state.title, content = state.content))
-            }
-            currentNote = saved
+    /**
+     * Persiste únicamente si existe una diferencia real. El título se normaliza
+     * igual que en los casos de uso para evitar escrituras y timestamps falsos.
+     */
+    private suspend fun persist(): Note? = saveMutex.withLock {
+        val snapshot = _uiState.value
+        if (snapshot.isMissing) return@withLock null
+
+        val existing = currentNote
+        if (existing == null && !snapshot.hasText) {
             _uiState.update {
                 it.copy(
-                    isNew = false,
-                    isPinned = saved.isPinned,
-                    isArchived = saved.isArchived,
-                    isSaving = false,
-                    lastSavedAt = saved.updatedAt,
-                    createdAt = saved.createdAt,
+                    isPersisted = false,
+                    saveStatus = NoteSaveStatus.EMPTY,
                 )
             }
+            return@withLock null
+        }
+
+        val normalizedTitle = snapshot.title.trim()
+        if (existing != null &&
+            normalizedTitle == existing.title &&
+            snapshot.content == existing.content
+        ) {
+            _uiState.update {
+                it.copy(
+                    isPersisted = true,
+                    saveStatus = NoteSaveStatus.SAVED,
+                    isPinned = existing.isPinned,
+                    isArchived = existing.isArchived,
+                    createdAt = existing.createdAt,
+                    updatedAt = existing.updatedAt,
+                )
+            }
+            return@withLock existing
+        }
+
+        _uiState.update { it.copy(saveStatus = NoteSaveStatus.SAVING) }
+        return try {
+            val saved = if (existing == null) {
+                createNote(snapshot.title, snapshot.content, noteId)
+            } else {
+                updateNote(existing.copy(title = snapshot.title, content = snapshot.content))
+            }
+            currentNote = saved
+
+            val latest = _uiState.value
+            val stillPending = latest.title.trim() != saved.title ||
+                latest.content != saved.content
+            _uiState.update {
+                it.copy(
+                    isPersisted = true,
+                    isPinned = saved.isPinned,
+                    isArchived = saved.isArchived,
+                    saveStatus = if (stillPending) {
+                        NoteSaveStatus.UNSAVED
+                    } else {
+                        NoteSaveStatus.SAVED
+                    },
+                    createdAt = saved.createdAt,
+                    updatedAt = saved.updatedAt,
+                    justCreated = existing == null && !stillPending,
+                )
+            }
+            if (stillPending) ensureAutoSaveScheduled()
             saved
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (_: Throwable) {
-            _uiState.update { it.copy(isSaving = false) }
+            _uiState.update { it.copy(saveStatus = NoteSaveStatus.ERROR) }
             eventChannel.send(NoteEditorEvent.Failure)
             null
         }

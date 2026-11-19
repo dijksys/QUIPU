@@ -77,6 +77,14 @@ object DateTimeUtils {
         DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale)
             .format(toLocalDateTime(epochMillis))
 
+    fun formatMetadataDate(epochMillis: Long): String =
+        DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", locale)
+            .format(toLocalDateTime(epochMillis))
+
+    fun formatMetadataDateTime(epochMillis: Long): String =
+        DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy, HH:mm", locale)
+            .format(toLocalDateTime(epochMillis))
+
     fun formatMonthYear(epochMillis: Long): String =
         DateTimeFormatter.ofPattern("MMMM yyyy", locale)
             .format(toLocalDateTime(epochMillis))

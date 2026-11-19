@@ -25,17 +25,27 @@ sealed interface NotesEvent {
     data object Failure : NotesEvent
 }
 
+enum class NoteSaveStatus {
+    EMPTY,
+    UNSAVED,
+    SAVING,
+    SAVED,
+    ERROR,
+}
+
 data class NoteEditorUiState(
     val noteId: String,
     val isLoading: Boolean = true,
-    val isNew: Boolean = true,
+    val isNewSession: Boolean = true,
+    val isPersisted: Boolean = false,
     val title: String = "",
     val content: String = "",
     val isPinned: Boolean = false,
     val isArchived: Boolean = false,
-    val isSaving: Boolean = false,
-    val lastSavedAt: Long? = null,
+    val saveStatus: NoteSaveStatus = NoteSaveStatus.EMPTY,
     val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val justCreated: Boolean = false,
     val isMissing: Boolean = false,
 ) {
     val hasText: Boolean get() = title.isNotBlank() || content.isNotBlank()

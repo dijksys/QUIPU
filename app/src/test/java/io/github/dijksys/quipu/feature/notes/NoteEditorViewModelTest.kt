@@ -10,11 +10,11 @@ import io.github.dijksys.quipu.domain.usecase.notes.TogglePinNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.UpdateNoteUseCase
 import io.github.dijksys.quipu.fakes.FakeNoteRepository
 import io.github.dijksys.quipu.fakes.TestClock
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -24,6 +24,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -47,23 +48,149 @@ class NoteEditorViewModelTest {
     }
 
     @Test
-    fun `new note is saved automatically after debounce`() = runTest(dispatcher) {
+    fun `new empty note starts empty without metadata`() = runTest(dispatcher) {
         val viewModel = createViewModel()
         runCurrent()
 
-        viewModel.onTitleChange("Mi título")
-        viewModel.onContentChange("Contenido de la nota")
-        advanceUntilIdle()
-
-        val stored = repository.currentNotes.single()
-        assertEquals("Mi título", stored.title)
-        assertEquals("Contenido de la nota", stored.content)
-        assertFalse(viewModel.uiState.value.isSaving)
-        assertNotNull(viewModel.uiState.value.lastSavedAt)
+        val state = viewModel.uiState.value
+        assertEquals(NoteSaveStatus.EMPTY, state.saveStatus)
+        assertTrue(state.isNewSession)
+        assertFalse(state.isPersisted)
+        assertNull(state.createdAt)
+        assertNull(state.updatedAt)
+        assertFalse(state.justCreated)
+        assertTrue(repository.currentNotes.isEmpty())
     }
 
     @Test
-    fun `blank new note is not persisted`() = runTest(dispatcher) {
+    fun `typing marks unsaved immediately and stays pending during debounce`() =
+        runTest(dispatcher) {
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.onTitleChange("Mi título")
+
+            assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+            advanceTimeBy(300)
+            runCurrent()
+            assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+            assertTrue(repository.currentNotes.isEmpty())
+
+            advanceUntilIdle()
+
+            val saved = viewModel.uiState.value
+            assertEquals(NoteSaveStatus.SAVED, saved.saveStatus)
+            assertTrue(saved.justCreated)
+            assertTrue(saved.isPersisted)
+            assertTrue(saved.isNewSession)
+            assertNotNull(saved.createdAt)
+            assertNotNull(saved.updatedAt)
+            assertEquals(1, repository.upsertCount)
+        }
+
+    @Test
+    fun `saving state is exposed while write is in progress`() = runTest(dispatcher) {
+        repository.writeGate = CompletableDeferred()
+        val viewModel = createViewModel()
+        runCurrent()
+
+        viewModel.onTitleChange("Nota")
+        advanceTimeBy(601)
+        runCurrent()
+
+        assertEquals(NoteSaveStatus.SAVING, viewModel.uiState.value.saveStatus)
+        assertFalse(viewModel.uiState.value.justCreated)
+
+        repository.writeGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+        assertTrue(viewModel.uiState.value.justCreated)
+    }
+
+    @Test
+    fun `first creation shows created state and subsequent save shows saved`() =
+        runTest(dispatcher) {
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.onTitleChange("Primera")
+            viewModel.onContentChange("Contenido")
+            advanceUntilIdle()
+
+            assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+            assertTrue(viewModel.uiState.value.justCreated)
+
+            clock.currentTime += 2_000
+            viewModel.onContentChange("Contenido editado")
+            assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+            assertFalse(viewModel.uiState.value.justCreated)
+            advanceUntilIdle()
+
+            assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+            assertFalse(viewModel.uiState.value.justCreated)
+            assertEquals(clock.currentTime, repository.currentNotes.single().updatedAt)
+        }
+
+    @Test
+    fun `existing note starts saved in edit session and updates timestamp`() =
+        runTest(dispatcher) {
+            val originalUpdatedAt = clock.currentTime
+            repository.preload(note(id = "n1", title = "Antes", content = "Texto"))
+            val viewModel = createViewModel(noteId = "n1")
+            runCurrent()
+
+            val initial = viewModel.uiState.value
+            assertEquals(NoteSaveStatus.SAVED, initial.saveStatus)
+            assertFalse(initial.isNewSession)
+            assertTrue(initial.isPersisted)
+            assertEquals(originalUpdatedAt, initial.updatedAt)
+
+            clock.currentTime += 2_000
+            viewModel.onContentChange("Texto editado")
+            assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+            advanceUntilIdle()
+
+            val saved = viewModel.uiState.value
+            assertEquals(NoteSaveStatus.SAVED, saved.saveStatus)
+            assertEquals(clock.currentTime, saved.updatedAt)
+            assertEquals("Texto editado", repository.getStored("n1")!!.content)
+        }
+
+    @Test
+    fun `closing without changes does not update timestamp or write`() = runTest(dispatcher) {
+        val originalUpdatedAt = clock.currentTime
+        repository.preload(note(id = "n1", title = "Sin cambios", content = "Texto"))
+        val viewModel = createViewModel(noteId = "n1")
+        runCurrent()
+
+        clock.currentTime += 5_000
+        val id = viewModel.saveNow()
+
+        assertEquals("n1", id)
+        assertEquals(0, repository.upsertCount)
+        assertEquals(originalUpdatedAt, viewModel.uiState.value.updatedAt)
+        assertEquals(originalUpdatedAt, repository.getStored("n1")!!.updatedAt)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `closing with pending changes persists them immediately`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        runCurrent()
+        viewModel.onTitleChange("Salida")
+        viewModel.onContentChange("Contenido pendiente")
+
+        val id = viewModel.saveNow()
+
+        assertNotNull(id)
+        assertEquals("Salida", repository.getStored(id!!)!!.title)
+        assertEquals("Contenido pendiente", repository.getStored(id)!!.content)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `blank new note remains empty and is not persisted`() = runTest(dispatcher) {
         val viewModel = createViewModel()
         runCurrent()
 
@@ -71,68 +198,165 @@ class NoteEditorViewModelTest {
         viewModel.onContentChange("  ")
         advanceUntilIdle()
 
+        assertEquals(NoteSaveStatus.EMPTY, viewModel.uiState.value.saveStatus)
         assertTrue(repository.currentNotes.isEmpty())
+        assertEquals(0, repository.upsertCount)
     }
 
     @Test
-    fun `saveNow flushes pending changes immediately`() = runTest(dispatcher) {
+    fun `failed save keeps content and retry recovers`() = runTest(dispatcher) {
+        repository.failWrites = true
         val viewModel = createViewModel()
         runCurrent()
-        viewModel.onTitleChange("Sin esperar")
-        viewModel.onContentChange("Texto")
+        viewModel.onTitleChange("No se guarda")
+        viewModel.onContentChange("Contenido intacto")
 
-        val id = viewModel.saveNow()
-
-        assertNotNull(id)
-        assertEquals("Sin esperar", repository.getStored(id!!)!!.title)
-    }
-
-    @Test
-    fun `existing note is loaded and updated`() = runTest(dispatcher) {
-        val existing = note(id = "n1", title = "Antes", content = "Texto")
-        repository.preload(existing)
-        val viewModel = createViewModel(noteId = "n1")
-        runCurrent()
-
-        assertEquals("Antes", viewModel.uiState.value.title)
-        assertFalse(viewModel.uiState.value.isNew)
-
-        clock.currentTime += 2_000
-        viewModel.onTitleChange("Después")
         advanceUntilIdle()
 
-        assertEquals("Después", repository.getStored("n1")!!.title)
-        assertTrue(viewModel.uiState.value.createdAt == existing.createdAt)
+        assertEquals(NoteSaveStatus.ERROR, viewModel.uiState.value.saveStatus)
+        assertEquals("No se guarda", viewModel.uiState.value.title)
+        assertEquals("Contenido intacto", viewModel.uiState.value.content)
+        assertNull(viewModel.uiState.value.createdAt)
+        assertEquals(0, repository.upsertCount)
+
+        repository.failWrites = false
+        viewModel.retrySave()
+        advanceUntilIdle()
+
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+        assertTrue(viewModel.uiState.value.justCreated)
+        assertNotNull(viewModel.uiState.value.createdAt)
+        assertEquals("No se guarda", repository.currentNotes.single().title)
     }
 
     @Test
-    fun `pin action persists note and emits event`() = runTest(dispatcher) {
+    fun `changes during an active save stay unsaved and are saved next`() =
+        runTest(dispatcher) {
+            repository.writeGate = CompletableDeferred()
+            val viewModel = createViewModel()
+            runCurrent()
+            viewModel.onTitleChange("A")
+            advanceTimeBy(601)
+            runCurrent()
+            assertEquals(NoteSaveStatus.SAVING, viewModel.uiState.value.saveStatus)
+
+            viewModel.onContentChange("B")
+            assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+            repository.writeGate?.complete(Unit)
+            runCurrent()
+
+            assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+            assertEquals("A", repository.currentNotes.single().title)
+
+            advanceUntilIdle()
+
+            assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+            assertEquals("B", repository.currentNotes.single().content)
+            assertEquals(2, repository.upsertCount)
+        }
+
+    @Test
+    fun `pin does not write content and refreshes metadata`() = runTest(dispatcher) {
         repository.preload(note(id = "n1", title = "Nota", content = "Texto"))
         val viewModel = createViewModel(noteId = "n1")
         runCurrent()
-        val event = async { viewModel.events.first() }
+        clock.currentTime += 2_000
 
         viewModel.togglePin()
         advanceUntilIdle()
 
         assertTrue(repository.getStored("n1")!!.isPinned)
-        assertEquals(true, (event.await() as NoteEditorEvent.PinChanged).pinned)
+        assertEquals(0, repository.upsertCount)
+        assertEquals(1, repository.pinCount)
+        assertEquals(clock.currentTime, viewModel.uiState.value.updatedAt)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
     }
 
     @Test
-    fun `archive action saves content and emits state`() = runTest(dispatcher) {
+    fun `archive does not write content and refreshes metadata`() = runTest(dispatcher) {
         repository.preload(note(id = "n1", title = "Nota", content = "Texto"))
         val viewModel = createViewModel(noteId = "n1")
         runCurrent()
-        val event = async { viewModel.events.first() }
+        clock.currentTime += 2_000
 
-        viewModel.onContentChange("Contenido editado")
         viewModel.setArchived(true)
         advanceUntilIdle()
 
         assertTrue(repository.getStored("n1")!!.isArchived)
-        assertEquals("Contenido editado", repository.getStored("n1")!!.content)
-        assertEquals(true, (event.await() as NoteEditorEvent.ArchiveChanged).archived)
+        assertEquals(0, repository.upsertCount)
+        assertEquals(1, repository.archiveCount)
+        assertEquals(clock.currentTime, viewModel.uiState.value.updatedAt)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `background flush without changes does not update timestamp`() = runTest(dispatcher) {
+        val originalUpdatedAt = clock.currentTime
+        repository.preload(note(id = "n1", title = "Sin cambios", content = "Texto"))
+        val viewModel = createViewModel(noteId = "n1")
+        runCurrent()
+        clock.currentTime += 5_000
+
+        viewModel.flush()
+        advanceUntilIdle()
+
+        assertEquals(0, repository.upsertCount)
+        assertEquals(originalUpdatedAt, repository.getStored("n1")!!.updatedAt)
+        assertEquals(originalUpdatedAt, viewModel.uiState.value.updatedAt)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `background flush persists pending edits immediately`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        runCurrent()
+        viewModel.onTitleChange("Segundo plano")
+        viewModel.onContentChange("Borrador pendiente")
+
+        viewModel.flush()
+        advanceUntilIdle()
+
+        val stored = repository.currentNotes.single()
+        assertEquals("Segundo plano", stored.title)
+        assertEquals("Borrador pendiente", stored.content)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+        assertEquals(1, repository.upsertCount)
+    }
+
+    @Test
+    fun `whitespace-only title change is not persisted`() = runTest(dispatcher) {
+        val originalUpdatedAt = clock.currentTime
+        repository.preload(note(id = "n1", title = "Original", content = "Texto"))
+        val viewModel = createViewModel(noteId = "n1")
+        runCurrent()
+
+        clock.currentTime += 5_000
+        viewModel.onTitleChange("Original   ")
+        advanceUntilIdle()
+
+        assertEquals(0, repository.upsertCount)
+        assertEquals(originalUpdatedAt, repository.getStored("n1")!!.updatedAt)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `restored draft marks unsaved and autosaves`() = runTest(dispatcher) {
+        repository.preload(note(id = "n1", title = "Original", content = "Texto"))
+        val viewModel = createViewModel(
+            noteId = "n1",
+            draftTitle = "Borrador restaurado",
+            draftContent = "Contenido restaurado",
+        )
+        runCurrent()
+
+        assertEquals(NoteSaveStatus.UNSAVED, viewModel.uiState.value.saveStatus)
+        assertEquals("Borrador restaurado", viewModel.uiState.value.title)
+
+        advanceUntilIdle()
+
+        assertEquals("Borrador restaurado", repository.getStored("n1")!!.title)
+        assertEquals("Contenido restaurado", repository.getStored("n1")!!.content)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
     }
 
     @Test
@@ -143,10 +367,17 @@ class NoteEditorViewModelTest {
         assertTrue(viewModel.uiState.value.isMissing)
     }
 
-    private fun createViewModel(noteId: String = NoteEditorViewModel.NEW_NOTE_ID): NoteEditorViewModel {
-        val savedState = SavedStateHandle(
-            mapOf(NoteEditorViewModel.ARG_NOTE_ID to noteId),
-        )
+    private fun createViewModel(
+        noteId: String = NoteEditorViewModel.NEW_NOTE_ID,
+        draftTitle: String? = null,
+        draftContent: String? = null,
+    ): NoteEditorViewModel {
+        val arguments = buildMap {
+            put(NoteEditorViewModel.ARG_NOTE_ID, noteId)
+            draftTitle?.let { put("draft_title", it) }
+            draftContent?.let { put("draft_content", it) }
+        }
+        val savedState = SavedStateHandle(arguments)
         return NoteEditorViewModel(
             savedStateHandle = savedState,
             getNote = GetNoteUseCase(repository),

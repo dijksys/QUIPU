@@ -3,6 +3,7 @@ package io.github.dijksys.quipu.fakes
 import io.github.dijksys.quipu.domain.model.Note
 import io.github.dijksys.quipu.domain.model.NoteFilter
 import io.github.dijksys.quipu.domain.repository.NoteRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -13,6 +14,13 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
     private val notes = MutableStateFlow(initialNotes.associateBy { it.id })
 
     var failWrites: Boolean = false
+    var writeGate: CompletableDeferred<Unit>? = null
+    var upsertCount: Int = 0
+        private set
+    var pinCount: Int = 0
+        private set
+    var archiveCount: Int = 0
+        private set
 
     val currentNotes: List<Note> get() = notes.value.values.toList()
 
@@ -61,16 +69,20 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
         notes.map { stored -> stored.values.count { it.matches(NoteFilter.ACTIVE) } }
 
     override suspend fun upsertNote(note: Note) {
+        writeGate?.await()
         if (failWrites) error("Fallo de escritura simulado")
+        upsertCount++
         notes.update { it + (note.id to note) }
     }
 
     override suspend fun setPinned(id: String, pinned: Boolean, updatedAt: Long) {
         if (failWrites) error("Fallo de escritura simulado")
+        pinCount++
         update(id) { it.copy(isPinned = pinned, updatedAt = updatedAt) }
     }
 
     override suspend fun setArchivedAt(id: String, archivedAt: Long?, updatedAt: Long) {
+        archiveCount++
         update(id) { it.copy(archivedAt = archivedAt, updatedAt = updatedAt) }
     }
 

@@ -1,14 +1,10 @@
 package io.github.dijksys.quipu.feature.notes
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,14 +45,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.dijksys.quipu.R
-import io.github.dijksys.quipu.core.common.DateTimeUtils
 import io.github.dijksys.quipu.core.designsystem.components.QuipuConfirmDialog
 import io.github.dijksys.quipu.core.designsystem.components.QuipuEmptyState
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
@@ -85,7 +79,9 @@ fun NoteEditorScreen(
     val leaveEditor: () -> Unit = {
         scope.launch(Dispatchers.Main.immediate) {
             viewModel.saveNow()
-            onBack()
+            if (viewModel.uiState.value.saveStatus != NoteSaveStatus.ERROR) {
+                onBack()
+            }
         }
     }
 
@@ -94,8 +90,8 @@ fun NoteEditorScreen(
         viewModel.flush()
     }
 
-    LaunchedEffect(state.isLoading, state.isNew) {
-        if (!state.isLoading && state.isNew) {
+    LaunchedEffect(state.isLoading, state.isNewSession) {
+        if (!state.isLoading && state.isNewSession) {
             focusRequester.requestFocus()
         }
     }
@@ -117,19 +113,16 @@ fun NoteEditorScreen(
         }
     }
 
-    val statusText = when {
-        state.isSaving -> stringResource(R.string.note_editor_saving)
-        state.lastSavedAt != null -> stringResource(R.string.note_editor_saved)
-        state.isNew -> stringResource(R.string.note_editor_new)
-        else -> ""
-    }
+    val editorTitle = stringResource(
+        if (state.isNewSession) R.string.note_editor_new else R.string.note_editor_edit,
+    )
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             QuipuTopAppBar(
-                title = statusText,
+                title = editorTitle,
                 onBack = leaveEditor,
                 actions = {
                     IconButton(
@@ -280,37 +273,13 @@ fun NoteEditorScreen(
                     ),
                     colors = transparentTextFieldColors(),
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = QuipuSpacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(QuipuSpacing.md),
-                ) {
-                    state.createdAt?.let { createdAt ->
-                        Text(
-                            text = stringResource(
-                                R.string.note_editor_created,
-                                DateTimeUtils.formatDate(createdAt),
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    state.lastSavedAt?.let { updatedAt ->
-                        Text(
-                            text = stringResource(
-                                R.string.note_editor_modified,
-                                DateTimeUtils.formatDateTime(updatedAt),
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
+                NoteSaveStatusFooter(
+                    saveStatus = state.saveStatus,
+                    createdAt = state.createdAt,
+                    updatedAt = state.updatedAt,
+                    justCreated = state.justCreated,
+                    onRetry = viewModel::retrySave,
+                )
             }
         }
     }

@@ -76,13 +76,19 @@
     <string name="trash_emptied">Papelera vaciada</string>
 
     <!-- Editor de notas -->
-    <string name="note_editor_saving">Guardando…</string>
-    <string name="note_editor_saved">Guardado</string>
     <string name="note_editor_new">Nueva nota</string>
+    <string name="note_editor_edit">Editar nota</string>
+    <string name="note_save_empty">Se guardará automáticamente al escribir</string>
+    <string name="note_save_unsaved">Cambios sin guardar</string>
+    <string name="note_save_saving">Guardando cambios…</string>
+    <string name="note_save_saved">Todos los cambios guardados</string>
+    <string name="note_save_created">Nota creada</string>
+    <string name="note_save_error">No se pudieron guardar los cambios</string>
+    <string name="note_save_retry">Reintentar</string>
     <string name="note_editor_title_placeholder">Título</string>
     <string name="note_editor_content_placeholder">Empieza a escribir…</string>
-    <string name="note_editor_created">Creada %1$s</string>
-    <string name="note_editor_modified">Modificada %1$s</string>
+    <string name="note_editor_created">Creada el %1$s</string>
+    <string name="note_editor_updated">Última actualización: %1$s</string>
     <string name="note_create_reminder">Crear recordatorio vinculado</string>
     <string name="note_write_before_reminder">Escribe algo en la nota antes de crear un recordatorio.</string>
     <string name="note_not_found_title">Nota no encontrada</string>
