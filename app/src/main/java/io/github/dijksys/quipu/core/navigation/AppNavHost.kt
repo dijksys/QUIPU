@@ -1,6 +1,8 @@
 package io.github.dijksys.quipu.core.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,7 +65,11 @@ fun AppNavHost(
         NavHost(
             navController = navController,
             startDestination = AppDestination.HOME,
-            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+            modifier = Modifier
+                .padding(bottom = innerPadding.calculateBottomPadding())
+                .consumeWindowInsets(
+                    if (showBottomBar) WindowInsets.navigationBars else WindowInsets(0, 0, 0, 0),
+                ),
         ) {
             composable(AppDestination.HOME) {
                 HomeScreen(
