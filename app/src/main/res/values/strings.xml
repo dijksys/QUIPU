@@ -21,6 +21,7 @@
 
     <!-- Inicio -->
     <string name="home_title">Inicio</string>
+    <string name="home_heading">Organiza tu día.</string>
     <string name="home_subtitle">Tus notas y recordatorios, en un solo lugar.</string>
     <string name="home_empty_title">Tu espacio está listo</string>
     <string name="home_empty_message">Empieza con una nota rápida o programa tu primer recordatorio.</string>
@@ -186,6 +187,13 @@
     <string name="settings_version">Versión %1$s</string>
     <string name="settings_privacy_message">Tus notas y recordatorios se guardan solo en este dispositivo. No hay cuentas ni servidores.</string>
     <string name="settings_offline_message">La app funciona completamente sin conexión a Internet.</string>
+    <string name="settings_project_title">Proyecto</string>
+    <string name="settings_project_profile_title">Perfil del desarrollador</string>
+    <string name="settings_project_profile_description">github.com/dijksys</string>
+    <string name="settings_project_repository_title">Repositorio de QUIPU</string>
+    <string name="settings_project_repository_description">Código fuente · Licencia MIT</string>
+    <string name="settings_project_external_link">Abrir enlace externo</string>
+    <string name="settings_project_open_error">No se pudo abrir el enlace. Inténtalo de nuevo.</string>
 
     <!-- Notificaciones -->
     <string name="notification_channel_reminders">Recordatorios</string>

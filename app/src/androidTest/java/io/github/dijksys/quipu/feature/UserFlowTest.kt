@@ -1,6 +1,7 @@
 package io.github.dijksys.quipu.feature
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.dijksys.quipu.MainActivity
 import io.github.dijksys.quipu.R
+import io.github.dijksys.quipu.core.common.DateTimeUtils
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +23,26 @@ class UserFlowTest {
 
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun homeShowsDateAndTypographicHeader() {
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("home_heading").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        val expectedDate = DateTimeUtils.formatLongDate(System.currentTimeMillis())
+            .replaceFirstChar { it.uppercase() }
+
+        composeRule.onNodeWithTag("home_date").assertIsDisplayed()
+        composeRule.onNodeWithTag("home_date").assertTextEquals(expectedDate)
+        composeRule.onNodeWithTag("home_heading").assertTextEquals(
+            composeRule.activity.getString(R.string.home_heading),
+        )
+        composeRule.onNodeWithTag("home_subtitle").assertTextEquals(
+            composeRule.activity.getString(R.string.home_subtitle),
+        )
+        composeRule.onNodeWithTag("home_new_note").assertIsDisplayed()
+    }
 
     @Test
     fun createNoteAndKeepItAfterActivityRecreation() {

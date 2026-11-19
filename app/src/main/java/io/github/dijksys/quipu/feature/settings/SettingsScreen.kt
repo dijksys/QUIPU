@@ -1,6 +1,8 @@
 package io.github.dijksys.quipu.feature.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,11 +17,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SettingsBrightness
 import androidx.compose.material3.HorizontalDivider
@@ -36,9 +41,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,13 +56,16 @@ import io.github.dijksys.quipu.R
 import io.github.dijksys.quipu.core.designsystem.components.QuipuCard
 import io.github.dijksys.quipu.core.designsystem.components.QuipuInfoPill
 import io.github.dijksys.quipu.core.designsystem.components.QuipuSectionHeader
-import io.github.dijksys.quipu.core.designsystem.components.QuipuSelectableRow
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTextButton
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
 import io.github.dijksys.quipu.core.permissions.rememberExactAlarmPermissionController
 import io.github.dijksys.quipu.core.permissions.rememberNotificationPermissionController
 import io.github.dijksys.quipu.domain.model.ThemeMode
+import kotlinx.coroutines.launch
+
+private const val DEVELOPER_PROFILE_URL = "https://github.com/dijksys"
+private const val REPOSITORY_URL = "https://github.com/dijksys/QUIPU"
 
 @Composable
 fun SettingsScreen(
@@ -64,6 +76,18 @@ fun SettingsScreen(
     val notificationPermission = rememberNotificationPermissionController()
     val exactAlarmPermission = rememberExactAlarmPermissionController()
     val messageError = stringResource(R.string.error_generic)
+    val uriHandler = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    val linkOpenError = stringResource(R.string.settings_project_open_error)
+
+    val openLink: (String) -> Unit = { url ->
+        runCatching { uriHandler.openUri(url) }
+            .onFailure {
+                scope.launch {
+                    snackbarHostState.showSnackbar(linkOpenError)
+                }
+            }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -255,9 +279,99 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = QuipuSpacing.md),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
+
+                    ProjectSection(onOpenLink = openLink)
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun ProjectSection(onOpenLink: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.settings_project_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.height(QuipuSpacing.xs))
+        ProjectLinkRow(
+            title = stringResource(R.string.settings_project_profile_title),
+            description = stringResource(R.string.settings_project_profile_description),
+            icon = Icons.Rounded.Person,
+            onClick = { onOpenLink(DEVELOPER_PROFILE_URL) },
+            modifier = Modifier.testTag("settings_project_profile"),
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        ProjectLinkRow(
+            title = stringResource(R.string.settings_project_repository_title),
+            description = stringResource(R.string.settings_project_repository_description),
+            icon = Icons.Rounded.Code,
+            onClick = { onOpenLink(REPOSITORY_URL) },
+            modifier = Modifier.testTag("settings_project_repository"),
+        )
+    }
+}
+
+@Composable
+private fun ProjectLinkRow(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val openLinkLabel = stringResource(R.string.settings_project_external_link)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                role = Role.Button,
+                onClickLabel = openLinkLabel,
+                onClick = onClick,
+            )
+            .padding(vertical = QuipuSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+            modifier = Modifier.size(36.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(19.dp),
+                )
+            }
+        }
+        Spacer(Modifier.width(QuipuSpacing.md))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(QuipuSpacing.sm))
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 

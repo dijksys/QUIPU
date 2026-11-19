@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.dijksys.quipu.R
@@ -92,17 +93,32 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(QuipuSpacing.md),
         ) {
             item {
-                Text(
-                    text = DateTimeUtils.formatLongDate(state.nowMillis)
-                        .replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Spacer(Modifier.height(QuipuSpacing.xs))
-                Text(
-                    text = stringResource(R.string.home_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column {
+                    Text(
+                        text = DateTimeUtils.formatLongDate(state.nowMillis)
+                            .replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("home_date"),
+                    )
+                    Spacer(Modifier.height(QuipuSpacing.xs))
+                    Text(
+                        text = stringResource(R.string.home_heading),
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = 26.sp,
+                            lineHeight = 32.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.testTag("home_heading"),
+                    )
+                    Spacer(Modifier.height(QuipuSpacing.xs))
+                    Text(
+                        text = stringResource(R.string.home_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("home_subtitle"),
+                    )
+                }
             }
 
             item {

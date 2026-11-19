@@ -10,8 +10,8 @@ plugins {
 }
 
 // Release version. Increment versionCode for every published release.
-val quipuVersionCode = 1
-val quipuVersionName = "1.0.0"
+val quipuVersionCode = 2
+val quipuVersionName = "1.0.3"
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {

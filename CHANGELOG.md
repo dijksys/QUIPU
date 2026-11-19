@@ -2,6 +2,52 @@
 
 Todas las fechas están en formato ISO 8601.
 
+## [1.0.3] - 2026-11-19
+
+### Añadido
+
+- Enlaces al perfil del desarrollador y al repositorio de QUIPU dentro de
+  Ajustes → Acerca de, con apertura en el navegador externo.
+- Nuevo encabezado principal de Inicio: «Organiza tu día.».
+- Estado de guardado explícito en el editor de notas: vacío, cambios sin
+  guardar, guardando, guardado y error, con acción de reintento.
+- Metadatos claros de creación y última actualización en el editor.
+
+### Mejorado
+
+- Jerarquía tipográfica del encabezado de Inicio: fecha como etiqueta
+  secundaria, título principal destacado y descripción de apoyo.
+- Navegación inferior rediseñada como una cápsula flotante.
+- El editor conserva la sesión «Nueva nota» después del primer autoguardado y
+  separa el título contextual del estado de persistencia.
+- La sección Acerca de mantiene la información de privacidad y funcionamiento
+  sin conexión, ahora acompañada de la información del proyecto.
+
+### Corregido
+
+- Salir, pasar a segundo plano o reabrir una nota sin cambios ya no actualiza
+  `updatedAt` ni realiza escrituras innecesarias.
+- Las ediciones realizadas durante un guardado activo permanecen pendientes y
+  se persisten en una escritura posterior.
+- Un error de guardado conserva el borrador y permite reintentar sin cerrar el
+  editor.
+
+### Verificación
+
+- 60 pruebas unitarias y 21 instrumentadas aprobadas.
+- `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
+  `:app:assembleDebug` y `:app:assembleRelease`.
+- Validación manual en emulador Pixel 7 con Android API 37 en tema claro y
+  oscuro, actualización desde QUIPU 1.0.0 y apertura de los enlaces externos.
+- Actualización instalada sobre QUIPU 1.0.0 conservando los datos existentes.
+
+### Limitaciones conocidas
+
+- Recordatorios sin recurrencia.
+- Interfaz únicamente en español.
+- Búsqueda mediante `LIKE`, sin índice FTS.
+- Sin sincronización ni cuentas.
+
 ## [1.0.0] - 2026-11-19
 
 ### Añadido

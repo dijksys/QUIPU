@@ -12,7 +12,7 @@ instrumentadas.
 ## Identidad de la aplicación
 
 - **Application ID:** `io.github.dijksys.quipu`
-- **Versión estable:** `1.0.0`
+- **Versión estable:** `1.0.3`
 - **Nombre visible:** QUIPU
 - **Android mínimo:** 8.0 (API 26)
 
@@ -138,6 +138,7 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/FEATURES.md](docs/FEATURES.md)
 - [docs/BRANDING.md](docs/BRANDING.md)
+- [docs/releases/v1.0.3.md](docs/releases/v1.0.3.md)
 - [docs/releases/v1.0.0.md](docs/releases/v1.0.0.md)
 
 ## Licencia
