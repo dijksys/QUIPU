@@ -82,7 +82,7 @@ Los casos de uso usan inyección por constructor; no se creó un
 
 Base de datos: `quipu.db`, versión 1, `exportSchema = true`.
 El esquema exportado está en
-`app/schemas/com.example.quipu.core.database.AppDatabase/1.json`.
+`app/schemas/io.github.dijksys.quipu.core.database.AppDatabase/1.json`.
 
 **Notas** (`notes`):
 
@@ -163,6 +163,16 @@ inesperadas.
   interfaz.
 - **Errores**: las operaciones de escritura se envuelven en `runCatching` y los
   flujos degradan a estados vacíos con snackbar, evitando cierres inesperados.
+- **R8 en modo completo** para Release. Se descartó el `packageScope`
+  experimental porque provocaba un `IllegalAccessError` con clases internas de
+  secuencias de Kotlin; el APK Release se probó en dispositivo tras el cambio.
+- **Firma Release** con un keystore JKS externo, leído desde
+  `keystore.properties` (ignorado por Git). Debug no depende del material de
+  distribución y Release falla explícitamente si la firma no es válida.
+- **Esquema Room histórico**: se conserva el esquema exportado bajo el paquete
+  anterior y se añade el nuevo bajo
+  `io.github.dijksys.quipu.core.database.AppDatabase`, sin cambiar la versión de
+  base de datos ni las tablas.
 
 ## Pruebas
 

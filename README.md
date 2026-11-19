@@ -9,6 +9,13 @@ archivado, búsqueda, recordatorios con alarmas locales, notificaciones,
 reprogramación tras reinicios, ajustes de tema y pruebas unitarias e
 instrumentadas.
 
+## Identidad de la aplicación
+
+- **Application ID:** `io.github.dijksys.quipu`
+- **Versión estable:** `1.0.0`
+- **Nombre visible:** QUIPU
+- **Android mínimo:** 8.0 (API 26)
+
 ## Stack
 
 - Kotlin 2.2.10
@@ -131,6 +138,7 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/FEATURES.md](docs/FEATURES.md)
 - [docs/BRANDING.md](docs/BRANDING.md)
+- [docs/releases/v1.0.0.md](docs/releases/v1.0.0.md)
 
 ## Licencia
 

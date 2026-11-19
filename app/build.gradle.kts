@@ -1,8 +1,82 @@
+import java.io.FileInputStream
+import java.security.KeyStore
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+}
+
+// Release version. Increment versionCode for every published release.
+val quipuVersionCode = 1
+val quipuVersionName = "1.0.0"
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.isFile) {
+        FileInputStream(keystorePropertiesFile).use { load(it) }
+    }
+}
+val requiredSigningProperties = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+val hasCompleteSigningConfig = keystorePropertiesFile.isFile &&
+    requiredSigningProperties.all { !keystoreProperties.getProperty(it).isNullOrBlank() }
+
+fun releaseStoreFile(): File {
+    val configuredPath = keystoreProperties.getProperty("storeFile")
+        ?: throw GradleException("Falta storeFile en keystore.properties")
+    val configuredFile = File(configuredPath)
+    return if (configuredFile.isAbsolute) configuredFile else rootProject.file(configuredPath)
+}
+
+val releaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("Release", ignoreCase = true) ||
+        taskName == "build" ||
+        taskName == "assemble" ||
+        taskName == "publish"
+}
+
+if (releaseTaskRequested) {
+    if (!keystorePropertiesFile.isFile) {
+        throw GradleException(
+            "No se puede generar un Release firmado: falta keystore.properties en la raíz.",
+        )
+    }
+    if (!hasCompleteSigningConfig) {
+        throw GradleException(
+            "No se puede generar un Release firmado: faltan propiedades de firma.",
+        )
+    }
+    val storeFile = releaseStoreFile()
+    if (!storeFile.isFile) {
+        throw GradleException("No se puede generar un Release firmado: el keystore no existe.")
+    }
+    val keyAlias = keystoreProperties.getProperty("keyAlias")
+    if (keyAlias != "quipu-release") {
+        throw GradleException("El alias de firma Release debe ser quipu-release.")
+    }
+    try {
+        val keyStore = KeyStore.getInstance("JKS")
+        val storePassword = keystoreProperties.getProperty("storePassword")
+        val keyPassword = keystoreProperties.getProperty("keyPassword")
+        storeFile.inputStream().use { keyStore.load(it, storePassword.toCharArray()) }
+        if (!keyStore.containsAlias(keyAlias)) {
+            throw GradleException("El alias de firma no existe en el keystore.")
+        }
+        val entry = keyStore.getEntry(
+            keyAlias,
+            KeyStore.PasswordProtection(keyPassword.toCharArray()),
+        )
+        if (entry !is KeyStore.PrivateKeyEntry) {
+            throw GradleException("El alias no contiene una clave privada.")
+        }
+    } catch (exception: Exception) {
+        throw GradleException(
+            "La configuración de firma Release no es válida.",
+            exception,
+        )
+    }
 }
 
 ksp {
@@ -11,26 +85,40 @@ ksp {
 }
 
 android {
-    namespace = "com.example.quipu"
+    namespace = "io.github.dijksys.quipu"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.quipu"
+        applicationId = "io.github.dijksys.quipu"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = quipuVersionCode
+        versionName = quipuVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasCompleteSigningConfig) {
+            create("release") {
+                storeFile = releaseStoreFile()
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            isDebuggable = false
+            if (hasCompleteSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**", "com.example.quipu.**")
             }
         }
     }
@@ -44,6 +132,14 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("QUIPU-$quipuVersionName.apk")
+        }
     }
 }
 
