@@ -130,6 +130,7 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/FEATURES.md](docs/FEATURES.md)
+- [docs/BRANDING.md](docs/BRANDING.md)
 
 ## Licencia
 
