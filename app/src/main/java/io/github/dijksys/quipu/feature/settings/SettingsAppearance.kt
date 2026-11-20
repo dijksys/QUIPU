@@ -2,13 +2,11 @@ package io.github.dijksys.quipu.feature.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
@@ -19,20 +17,16 @@ import androidx.compose.material.icons.rounded.SettingsBrightness
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.dijksys.quipu.R
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
 import io.github.dijksys.quipu.domain.model.ThemeMode
@@ -48,7 +42,7 @@ internal fun ThemeModeSelector(
         horizontalArrangement = Arrangement.spacedBy(QuipuSpacing.sm),
     ) {
         ThemeModePill(
-            title = stringResource(R.string.settings_theme_light),
+            label = stringResource(R.string.settings_theme_light),
             icon = Icons.Rounded.LightMode,
             selected = selected == ThemeMode.LIGHT,
             onClick = { onSelect(ThemeMode.LIGHT) },
@@ -57,7 +51,7 @@ internal fun ThemeModeSelector(
                 .testTag("settings_theme_light"),
         )
         ThemeModePill(
-            title = stringResource(R.string.settings_theme_dark),
+            label = stringResource(R.string.settings_theme_dark),
             icon = Icons.Rounded.DarkMode,
             selected = selected == ThemeMode.DARK,
             onClick = { onSelect(ThemeMode.DARK) },
@@ -66,7 +60,7 @@ internal fun ThemeModeSelector(
                 .testTag("settings_theme_dark"),
         )
         ThemeModePill(
-            title = stringResource(R.string.settings_theme_system),
+            label = stringResource(R.string.settings_theme_system),
             icon = Icons.Rounded.SettingsBrightness,
             selected = selected == ThemeMode.SYSTEM,
             onClick = { onSelect(ThemeMode.SYSTEM) },
@@ -79,7 +73,7 @@ internal fun ThemeModeSelector(
 
 @Composable
 private fun ThemeModePill(
-    title: String,
+    label: String,
     icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
@@ -98,12 +92,13 @@ private fun ThemeModePill(
 
     Surface(
         modifier = modifier
-            .heightIn(min = 60.dp)
+            .height(56.dp)
             .selectable(
                 selected = selected,
                 role = Role.RadioButton,
                 onClick = onClick,
-            ),
+            )
+            .semantics { contentDescription = label },
         shape = CircleShape,
         color = containerColor,
         contentColor = contentColor,
@@ -116,49 +111,15 @@ private fun ThemeModePill(
             },
         ),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = QuipuSpacing.xs, vertical = QuipuSpacing.sm),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(19.dp),
+                modifier = Modifier.size(23.dp),
             )
-            Spacer(Modifier.size(QuipuSpacing.xxs))
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                val textMeasurer = rememberTextMeasurer()
-                val labelStyle = MaterialTheme.typography.labelSmall
-                val availableWidthPx = with(LocalDensity.current) {
-                    (maxWidth - 4.dp).toPx()
-                }
-                var fittedSize = 11f
-                while (fittedSize > 8f) {
-                    val measured = textMeasurer.measure(
-                        text = title,
-                        style = labelStyle.copy(fontSize = fittedSize.sp),
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Clip,
-                    )
-                    if (measured.size.width <= availableWidthPx) break
-                    fittedSize -= 0.5f
-                }
-                Text(
-                    text = title,
-                    style = labelStyle.copy(fontSize = fittedSize.sp),
-                    color = contentColor,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                    textAlign = TextAlign.Center,
-                )
-            }
         }
     }
 }

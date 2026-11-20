@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
@@ -11,9 +12,11 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.dijksys.quipu.BuildConfig
@@ -56,6 +59,20 @@ class SettingsComponentsTest {
         composeRule.onNodeWithTag("settings_theme_system").assertIsSelected()
         composeRule.onNodeWithTag("settings_theme_light").assertIsNotSelected()
         composeRule.onNodeWithTag("settings_theme_dark").assertIsNotSelected()
+
+        composeRule.onNodeWithTag("settings_theme_light").assertHeightIsAtLeast(54.dp)
+        composeRule.onNodeWithTag("settings_theme_dark").assertHeightIsAtLeast(54.dp)
+        composeRule.onNodeWithTag("settings_theme_system").assertHeightIsAtLeast(54.dp)
+
+        val labels = listOf(
+            context.getString(R.string.settings_theme_light),
+            context.getString(R.string.settings_theme_dark),
+            context.getString(R.string.settings_theme_system),
+        )
+        labels.forEach { label ->
+            composeRule.onNodeWithContentDescription(label).assertIsDisplayed()
+            composeRule.onNodeWithText(label).assertDoesNotExist()
+        }
     }
 
     @Test
@@ -88,6 +105,9 @@ class SettingsComponentsTest {
         composeRule.onNodeWithTag("settings_theme_light").assertIsDisplayed()
         composeRule.onNodeWithTag("settings_theme_dark").assertIsSelected()
         composeRule.onNodeWithTag("settings_theme_system").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            context.getString(R.string.settings_theme_dark),
+        ).assertIsDisplayed()
     }
 
     @Test
