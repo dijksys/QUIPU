@@ -48,17 +48,26 @@ app/src/main/res/drawable-nodpi/quipu_logo.png
 ```
 
 - `ic_launcher_foreground.png`: 432 × 432 px ARGB. Lienzo transparente con una
-  teja blanca redondeada centrada que contiene el símbolo oficial. Se conserva
-  el interior blanco del documento y el fondo blanco del maestro; no se
-  reinterpretan ni deforman los trazos.
+  teja blanca redondeada centrada que contiene el símbolo oficial. La
+  composición completa se redujo al **82 %** respecto a la versión anterior
+  para aumentar el margen libre:
+  - teja blanca: aproximadamente **54,12 %** del lienzo (234 px);
+  - símbolo visible: aproximadamente **47,56 %** del lienzo (205 px);
+  - margen transparente resultante: aproximadamente **26,2 %** por lado.
+  Se conserva el interior blanco del documento y el fondo blanco del maestro;
+  no se reinterpretan ni deforman los trazos.
 - `ic_launcher_monochrome.png`: 432 × 432 px ARGB. Silueta monocromática blanca
   generada a partir de las zonas no blancas del maestro, con transparencia en
-  el fondo y en los huecos interiores.
+  el fondo y en los huecos interiores. Usa la misma reducción proporcional del
+  **82 %** y el mismo centrado óptico.
 - `quipu_logo.png`: 512 × 512 px ARGB. Versión para Compose, con la misma teja
-  blanca redondeada. Se utiliza en la bienvenida y en la tarjeta Acerca de.
+  blanca redondeada. No se modificó en este ajuste y se utiliza en la
+  bienvenida y en la tarjeta Acerca de.
 
 El contenido se centra ópticamente y mantiene la zona segura de Android para
-las máscaras circular, cuadrada redondeada y squircle.
+las máscaras circular, cuadrada redondeada y squircle. La reducción del
+foreground y del monocromático deja un margen blanco equilibrado dentro de la
+máscara del launcher.
 
 ### Iconos heredados
 
@@ -73,8 +82,13 @@ Para coherencia entre densidades se generan variantes redondeadas y circulares:
 | `xxxhdpi` | 192 px | `mipmap-xxxhdpi/ic_launcher.png`, `ic_launcher_round.png` |
 
 Los iconos heredados usan fondo blanco, el mismo símbolo y la misma zona
-segura. `ic_launcher` usa esquinas redondeadas; `ic_launcher_round` usa recorte
-circular.
+segura. El símbolo se escala a aproximadamente **47,56 %** del lienzo en todas
+las densidades para mantener la misma proporción visual que el foreground
+adaptativo. `ic_launcher` usa esquinas redondeadas; `ic_launcher_round` usa
+recorte circular.
+
+La reducción se aplicó de forma uniforme y centrada, sin deformar el símbolo ni
+modificar sus colores. Las cinco densidades comparten la misma composición.
 
 ## Notificaciones
 
