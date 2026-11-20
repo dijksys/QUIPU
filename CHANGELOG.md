@@ -2,6 +2,46 @@
 
 Todas las fechas están en formato ISO 8601.
 
+## [1.1.7] - 2026-11-20
+
+### Añadido
+
+- Selector horizontal de apariencia con tres píldoras independientes para
+  Claro, Oscuro y Automático.
+- Tarjetas independientes para el estado de notificaciones y los permisos de
+  notificaciones y alarmas exactas.
+- Tarjeta de identidad de QUIPU con el logo oficial actualizado en Acerca de.
+- Tarjetas independientes para el perfil del desarrollador y el repositorio.
+- Nuevo recurso `quipu_logo.png` para la bienvenida y la pantalla de Ajustes.
+
+### Mejorado
+
+- Reorganización visual completa de Ajustes con superficies redondeadas,
+  bordes sutiles y espaciados coherentes.
+- La sección Proyecto queda separada de la tarjeta Acerca de y utiliza su
+  propio encabezado.
+- Los permisos muestran insignias de estado y acciones contextuales sin alterar
+  la lógica de solicitud ni la programación de alarmas.
+- Todos los recursos del launcher, adaptativos, monocromáticos y heredados se
+  regeneraron desde el nuevo logo oficial.
+- Se retiraron las referencias al logo inclinado anterior.
+
+### Verificación
+
+- 81 pruebas unitarias y 39 instrumentadas aprobadas.
+- `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
+  `:app:assembleDebug` y `:app:assembleRelease`.
+- Validación manual en emulador Pixel 7 con Android API 37 en tema claro,
+  oscuro, pantalla compacta, escala de texto 1.3 y actualización desde
+  QUIPU 1.0.9.
+
+### Limitaciones conocidas
+
+- Recordatorios sin recurrencia.
+- Interfaz únicamente en español.
+- Búsqueda mediante `LIKE`, sin índice FTS.
+- Sin sincronización ni cuentas.
+
 ## [1.0.9] - 2026-11-19
 
 ### Añadido

@@ -53,11 +53,13 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect { } }
         advanceUntilIdle()
 
-        viewModel.setThemeMode(ThemeMode.DARK)
-        advanceUntilIdle()
+        for (mode in ThemeMode.entries) {
+            viewModel.setThemeMode(mode)
+            advanceUntilIdle()
 
-        assertEquals(ThemeMode.DARK, settings.current.themeMode)
-        assertEquals(ThemeMode.DARK, viewModel.uiState.value.themeMode)
+            assertEquals(mode, settings.current.themeMode)
+            assertEquals(mode, viewModel.uiState.value.themeMode)
+        }
     }
 
     @Test

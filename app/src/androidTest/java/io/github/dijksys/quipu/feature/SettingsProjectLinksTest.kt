@@ -5,7 +5,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuTheme
-import io.github.dijksys.quipu.feature.settings.ProjectSection
+import io.github.dijksys.quipu.feature.settings.ProjectLinksSection
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -22,7 +22,7 @@ class SettingsProjectLinksTest {
         val openedUrls = mutableListOf<String>()
         composeRule.setContent {
             QuipuTheme {
-                ProjectSection(onOpenLink = { openedUrls += it })
+                ProjectLinksSection(onOpenLink = { openedUrls += it })
             }
         }
 

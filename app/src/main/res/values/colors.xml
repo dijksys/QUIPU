@@ -2,5 +2,5 @@
 <resources>
     <color name="quipu_window_background">#F9F8F4</color>
     <color name="quipu_accent">#2E6B5E</color>
-    <color name="quipu_icon_background">#F9F8F4</color>
+    <color name="quipu_icon_background">#FFFFFF</color>
 </resources>

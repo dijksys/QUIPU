@@ -145,7 +145,7 @@ private fun BrandHeader() {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
-            painter = painterResource(R.drawable.ic_launcher_foreground),
+            painter = painterResource(R.drawable.quipu_logo),
             contentDescription = null,
             modifier = Modifier
                 .size(68.dp)
