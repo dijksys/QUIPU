@@ -6,6 +6,10 @@ import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
     fun observeSettings(): Flow<AppSettings>
+    fun observeOnboardingCompleted(): Flow<Boolean?>
+    suspend fun getOnboardingCompleted(): Boolean?
+    suspend fun initializeOnboardingCompleted(completed: Boolean): Boolean
+    suspend fun completeOnboarding()
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun setNotificationsEnabled(enabled: Boolean)
 }

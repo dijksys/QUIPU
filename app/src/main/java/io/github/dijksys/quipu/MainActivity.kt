@@ -16,7 +16,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.dijksys.quipu.core.designsystem.theme.AppThemeViewModel
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuTheme
-import io.github.dijksys.quipu.core.navigation.AppNavHost
+import io.github.dijksys.quipu.core.navigation.AppEntry
 import io.github.dijksys.quipu.core.notifications.ReminderNotificationManager
 import io.github.dijksys.quipu.domain.model.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
             }
 
             QuipuTheme(darkTheme = darkTheme) {
-                AppNavHost(
+                AppEntry(
                     pendingReminderId = pendingReminderId,
                     onPendingReminderConsumed = { pendingReminderId = null },
                 )

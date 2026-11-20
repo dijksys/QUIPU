@@ -19,6 +19,22 @@
     <string name="action_back_to_notes">Volver a notas</string>
     <string name="error_generic">No se pudo completar la acción. Inténtalo de nuevo.</string>
 
+    <!-- Bienvenida -->
+    <string name="welcome_tagline">Tu espacio para organizarte</string>
+    <string name="welcome_headline">Todo en su lugar.</string>
+    <string name="welcome_description">Tus notas y recordatorios, en una sola aplicación.</string>
+    <string name="welcome_notes_title">Notas</string>
+    <string name="welcome_notes_description">Guarda tus ideas y vuelve a ellas cuando quieras.</string>
+    <string name="welcome_reminders_title">Recordatorios</string>
+    <string name="welcome_reminders_description">Programa avisos para no olvidar lo importante.</string>
+    <string name="welcome_privacy_title">Privacidad local</string>
+    <string name="welcome_privacy_description">Tu información permanece en este dispositivo.</string>
+    <string name="welcome_start">Comenzar</string>
+    <string name="welcome_footer">Todo comienza con una idea.</string>
+    <string name="welcome_error_initialization">No se pudo preparar la bienvenida. Inténtalo de nuevo.</string>
+    <string name="welcome_error_completion">No se pudieron guardar los cambios. Inténtalo de nuevo.</string>
+    <string name="welcome_loading">Preparando QUIPU</string>
+
     <!-- Inicio -->
     <string name="home_title">Inicio</string>
     <string name="home_heading">Organiza tu día.</string>

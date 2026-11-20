@@ -2,6 +2,50 @@
 
 Todas las fechas están en formato ISO 8601.
 
+## [1.0.9] - 2026-11-19
+
+### Añadido
+
+- Pantalla de bienvenida que aparece únicamente en el primer inicio de una
+  instalación nueva de QUIPU.
+- Presentación de la identidad de QUIPU y de tres funcionalidades reales:
+  notas, recordatorios y privacidad local.
+- Indicador persistente `onboarding_completed` en el DataStore existente.
+- Detección compatible con instalaciones anteriores mediante la base de datos
+  Room, el archivo de preferencias y los tiempos de instalación/actualización
+  del paquete.
+- Casos de uso para resolver, observar y completar el onboarding.
+
+### Mejorado
+
+- La navegación principal permanece oculta hasta que se resuelve la bienvenida,
+  evitando mostrar Inicio antes de tiempo.
+- La bienvenida conserva una notificación pendiente y abre el recordatorio
+  correspondiente después de pulsar Comenzar.
+- La pantalla se adapta a temas claro y oscuro, tamaños de pantalla pequeños,
+  escalas de texto e insets del sistema.
+- Los errores de lectura o escritura mantienen la pantalla visible y permiten
+  reintentar sin acceder prematuramente a Inicio.
+- Los usuarios que actualizan desde 1.0.0 o 1.0.3 no vuelven a ver la
+  bienvenida.
+
+### Verificación
+
+- 81 pruebas unitarias y 30 instrumentadas aprobadas.
+- `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
+  `:app:assembleDebug` y `:app:assembleRelease`.
+- Validación manual de instalación limpia, primer inicio, cierre antes de
+  completar, temas claro/oscuro, pantalla compacta, recreación y actualización
+  desde QUIPU 1.0.3 conservando datos.
+- Validación manual en emulador Pixel 7 con Android API 37.
+
+### Limitaciones conocidas
+
+- Recordatorios sin recurrencia.
+- Interfaz únicamente en español.
+- Búsqueda mediante `LIKE`, sin índice FTS.
+- Sin sincronización ni cuentas.
+
 ## [1.0.3] - 2026-11-19
 
 ### Añadido
