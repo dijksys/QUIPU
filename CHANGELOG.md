@@ -2,6 +2,35 @@
 
 Todas las fechas están en formato ISO 8601.
 
+## [1.2.0] - 2026-11-20
+
+### Mejorado
+
+- El selector de apariencia de Ajustes muestra únicamente los iconos de Claro,
+  Oscuro y Automático, centrados en píldoras de 56 dp y sin etiquetas visibles.
+- Se conservan las descripciones accesibles, la semántica `RadioButton`, el
+  estado de selección y los destinos de cada modo.
+- El icono oficial del launcher reduce su composición al 82 % para dejar un
+  margen blanco equilibrado dentro de las máscaras de Android.
+- Se regeneraron el foreground, el monocromático y las variantes heredadas en
+  las cinco densidades con la nueva escala.
+
+### Verificación
+
+- 81 pruebas unitarias y 39 instrumentadas aprobadas.
+- `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
+  `:app:assembleDebug` y `:app:assembleRelease`.
+- Validación manual del selector en tema claro y oscuro.
+- Validación del icono en el launcher con máscara circular y comparación con
+  aplicaciones del sistema.
+
+### Limitaciones conocidas
+
+- Recordatorios sin recurrencia.
+- Interfaz únicamente en español.
+- Búsqueda mediante `LIKE`, sin índice FTS.
+- Sin sincronización ni cuentas.
+
 ## [1.1.7] - 2026-11-20
 
 ### Añadido
