@@ -2,7 +2,7 @@
 
 Todas las fechas están en formato ISO 8601.
 
-## [Unreleased]
+## [2.0.1] - 2026-11-21
 
 ### Añadido
 
@@ -49,8 +49,11 @@ Todas las fechas están en formato ISO 8601.
 - 174 pruebas unitarias y 62 instrumentadas aprobadas en el Motorola Moto G34
   5G (Android 15, API 35).
 - `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
-  `:app:assembleDebug` y la suite instrumentada completa.
+  `:app:assembleDebug`, `:app:assembleRelease` y la suite instrumentada.
 - Migración 1 → 2 validada con notas existentes y relleno del índice FTS.
+- APK Release firmada verificada con el certificado de QUIPU.
+
+## [Unreleased]
 
 ## [1.2.0] - 2026-11-20
 
