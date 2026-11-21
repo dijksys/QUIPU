@@ -4,7 +4,7 @@ Aplicación Android nativa para gestionar notas personales y recordatorios. Est�
 diseñada para funcionar **completamente sin conexión**, con almacenamiento local
 y una interfaz minimalista en español.
 
-La Fase 1 está implementada: CRUD de notas con guardado automático, papelera,
+QUIPU 2.0.1 está implementado: CRUD de notas con guardado automático, papelera,
 archivado, búsqueda FTS con etiquetas, recordatorios con alarmas locales,
 notificaciones, reprogramación tras reinicios, ajustes de tema y pruebas
 unitarias e instrumentadas. El editor aplica formato Markdown en tiempo real,
@@ -17,7 +17,7 @@ versiones anteriores conservan sus datos y omiten la bienvenida.
 ## Identidad de la aplicación
 
 - **Application ID:** `io.github.dijksys.quipu`
-- **Versión estable:** `1.2.0`
+- **Versión estable:** `2.0.1`
 - **Nombre visible:** QUIPU
 - **Android mínimo:** 8.0 (API 26)
 
@@ -77,7 +77,7 @@ Las pruebas instrumentadas requieren un emulador o dispositivo conectado
 minuto porque espera el disparo real de AlarmManager y la publicación de la
 notificación.
 
-Estado verificado en la Fase 1: **147 pruebas unitarias** y **56 pruebas
+Estado verificado en QUIPU 2.0.1: **174 pruebas unitarias** y **62 pruebas
 instrumentadas** en un Motorola moto g34 5G con Android 15 (API 35), todas en
 verde. `lintDebug` no reporta errores. También se verificaron manualmente la
 persistencia, la búsqueda FTS, el editor y la reprogramación de alarmas.
@@ -97,7 +97,7 @@ ajustes del sistema.
 ## Estructura
 
 ```
-app/src/main/java/com/example/quipu/
+app/src/main/java/io/github/dijksys/quipu/
   core/        base de datos, DataStore, navegación, alarmas, notificaciones,
                permisos, diseño visual y utilidades comunes
   domain/      modelos puros, contratos de repositorio y casos de uso
@@ -149,6 +149,7 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [docs/FEATURES/MARKDOWN_EDITOR.md](docs/FEATURES/MARKDOWN_EDITOR.md)
 - [docs/DEVELOPMENT/GITHUB_ACTIONS.md](docs/DEVELOPMENT/GITHUB_ACTIONS.md)
 - [docs/BRANDING.md](docs/BRANDING.md)
+- [docs/releases/v2.0.1.md](docs/releases/v2.0.1.md)
 - [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md)
 - [docs/releases/v1.1.7.md](docs/releases/v1.1.7.md)
 - [docs/releases/v1.0.9.md](docs/releases/v1.0.9.md)
