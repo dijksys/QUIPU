@@ -1,6 +1,6 @@
 # Funcionalidades
 
-Estado de la Fase 1 de QUIPU.
+Estado de QUIPU 2.0.1.
 
 ## Implementado
 
