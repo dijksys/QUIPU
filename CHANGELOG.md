@@ -25,7 +25,7 @@ Todas las fechas están en formato ISO 8601.
 
 - 179 pruebas unitarias.
 - 70 pruebas instrumentadas en emulador API 37 y validación manual en Motorola
-  Moto G34 5G.
+  Moto G34 5G (Android 15) y Google Pixel 6 Pro (Android 17).
 - Vaciado de 1 000 notas sintéticas sin ANR.
 - `PRAGMA integrity_check` y `PRAGMA foreign_key_check` correctos.
 - `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,

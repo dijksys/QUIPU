@@ -80,8 +80,9 @@ notificación.
 
 Estado verificado en QUIPU 2.1.3: **179 pruebas unitarias** y **70 pruebas
 instrumentadas** en emulador API 37, más validación manual en Motorola moto g34
-5G. `lintDebug` no reporta errores. También se verificaron la persistencia, la
-búsqueda FTS, el editor y el vaciado de papelera.
+5G (Android 15) y Google Pixel 6 Pro (Android 17). `lintDebug` no reporta
+errores. También se verificaron la persistencia, la búsqueda FTS, el editor y el
+vaciado de papelera.
 
 ## Permisos
 
