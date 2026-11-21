@@ -150,8 +150,76 @@ class NotesViewModelTest {
         assertEquals(NotesEvent.Failure, event.await())
     }
 
-    private fun createViewModel(filter: String = "ACTIVE"): NotesViewModel {
-        val savedState = SavedStateHandle(mapOf(NotesViewModel.ARG_FILTER to filter))
+    @Test
+    fun `initial query is restored from saved state`() = runTest(dispatcher) {
+        repository.preload(note("n1", "Lista de compras"), note("n2", "Ideas"))
+        val viewModel = createViewModel(query = "compras")
+        backgroundScope.launch { viewModel.uiState.collect { } }
+        advanceUntilIdle()
+
+        assertEquals("compras", viewModel.uiState.value.query)
+        assertEquals(listOf("n1"), viewModel.uiState.value.notes.map { it.id })
+    }
+
+    @Test
+    fun `date filter and sort order refine results`() = runTest(dispatcher) {
+        repository.preload(
+            note("n1", "Zeta compras", updatedAt = 1_000),
+            note("n2", "Alfa compras", updatedAt = 3_000),
+        )
+        val viewModel = createViewModel()
+        backgroundScope.launch { viewModel.uiState.collect { } }
+        advanceUntilIdle()
+
+        viewModel.onQueryChange("compras")
+        advanceTimeBy(300)
+        runCurrent()
+        viewModel.onSortOrderChange(io.github.dijksys.quipu.domain.model.NoteSortOrder.TITLE)
+        advanceUntilIdle()
+
+        assertEquals(listOf("n2", "n1"), viewModel.uiState.value.notes.map { it.id })
+
+        viewModel.onCustomRangeChange(
+            io.github.dijksys.quipu.domain.model.NoteDateRange(2_000, 4_000),
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf("n2"), viewModel.uiState.value.notes.map { it.id })
+    }
+
+    @Test
+    fun `clear search resets query and filters`() = runTest(dispatcher) {
+        repository.preload(note("n1", "Nota"))
+        val viewModel = createViewModel(query = "nota")
+        backgroundScope.launch { viewModel.uiState.collect { } }
+        advanceUntilIdle()
+
+        viewModel.onSortOrderChange(io.github.dijksys.quipu.domain.model.NoteSortOrder.RECENT)
+        viewModel.clearSearch()
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.uiState.value.query)
+        assertEquals(
+            io.github.dijksys.quipu.domain.model.NoteDateFilter.ALL,
+            viewModel.uiState.value.dateFilter,
+        )
+        assertEquals(
+            io.github.dijksys.quipu.domain.model.NoteSortOrder.RELEVANCE,
+            viewModel.uiState.value.sortOrder,
+        )
+        assertFalse(viewModel.uiState.value.isSearching)
+    }
+
+    private fun createViewModel(
+        filter: String = "ACTIVE",
+        query: String? = null,
+    ): NotesViewModel {
+        val savedState = SavedStateHandle(
+            buildMap {
+                put(NotesViewModel.ARG_FILTER, filter)
+                query?.let { put(NotesViewModel.ARG_QUERY, it) }
+            },
+        )
         return NotesViewModel(
             savedStateHandle = savedState,
             searchNotes = SearchNotesUseCase(repository),
@@ -161,6 +229,7 @@ class NotesViewModelTest {
             restoreNote = RestoreNoteUseCase(repository, clock),
             permanentlyDeleteNote = PermanentlyDeleteNoteUseCase(repository),
             emptyTrash = EmptyTrashUseCase(repository),
+            clock = clock,
         )
     }
 
@@ -168,12 +237,13 @@ class NotesViewModelTest {
         id: String,
         title: String,
         deletedAt: Long? = null,
+        updatedAt: Long = clock.currentTime,
     ) = Note(
         id = id,
         title = title,
         content = "",
         createdAt = clock.currentTime,
-        updatedAt = clock.currentTime,
+        updatedAt = updatedAt,
         deletedAt = deletedAt,
     )
 }

@@ -74,6 +74,9 @@ fun AppNavHost(
             composable(AppDestination.HOME) {
                 HomeScreen(
                     onOpenNotes = { navController.navigate(AppDestination.notes()) },
+                    onSearchNotes = { query ->
+                        navController.navigate(AppDestination.notes(query = query))
+                    },
                     onOpenReminders = { navController.navigate(AppDestination.REMINDERS) },
                     onOpenNote = { noteId ->
                         navController.navigate(AppDestination.noteEditor(noteId))
@@ -92,6 +95,10 @@ fun AppNavHost(
                     navArgument(AppDestination.ARG_FILTER) {
                         type = NavType.StringType
                         defaultValue = NoteFilter.ACTIVE.name
+                    },
+                    navArgument(AppDestination.ARG_QUERY) {
+                        type = NavType.StringType
+                        defaultValue = ""
                     },
                 ),
             ) {

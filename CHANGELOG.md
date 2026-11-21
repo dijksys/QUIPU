@@ -6,12 +6,32 @@ Todas las fechas están en formato ISO 8601.
 
 ### Añadido
 
+- Motor de búsqueda FTS4 con tokenizador `unicode61` y eliminación de
+  diacríticos sobre título, contenido Markdown y etiquetas.
+- Buscador prominente en Inicio que abre Notas con la consulta conservada.
+- Filtros por fecha, ordenación por relevancia, fecha o título y resaltado de
+  coincidencias.
+- Sistema normalizado de etiquetas con chips en el editor y búsqueda indexada.
+- Migración explícita de Room 1 → 2 que conserva todas las notas existentes.
+
+### Mejorado
+
 - Editor de notas con sintaxis Markdown: negritas, cursivas, encabezados,
   listas, casillas, enlaces y bloques de código.
-- Barra de herramientas con acciones basadas en la selección y conservación
-  del cursor.
+- Barra de herramientas acoplada sobre el teclado, visible solo con el contenido
+  enfocado y en modo edición.
+- Formato visual en tiempo real que oculta delimitadores sin alterar el Markdown
+  persistido.
 - Vista previa Markdown con casillas interactivas y enlaces externos seguros.
 - Extractos de notas sin sintaxis Markdown en Inicio y en el listado.
+
+### Verificación
+
+- 147 pruebas unitarias y 56 instrumentadas aprobadas en el Motorola Moto G34
+  5G (Android 15, API 35).
+- `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
+  `:app:assembleDebug` y la suite instrumentada completa.
+- Migración 1 → 2 validada con notas existentes y relleno del índice FTS.
 
 ## [1.2.0] - 2026-11-20
 

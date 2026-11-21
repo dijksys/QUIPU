@@ -68,7 +68,7 @@ fun NoteMarkdownToolbar(
             .fillMaxWidth()
             .testTag("note_markdown_toolbar"),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(

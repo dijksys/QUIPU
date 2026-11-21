@@ -1,18 +1,27 @@
 package io.github.dijksys.quipu.feature.notes
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.MoreVert
@@ -26,6 +35,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -47,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -64,6 +75,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.dijksys.quipu.R
 import io.github.dijksys.quipu.core.designsystem.components.QuipuConfirmDialog
 import io.github.dijksys.quipu.core.designsystem.components.QuipuEmptyState
+import io.github.dijksys.quipu.core.designsystem.components.QuipuFilterChip
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
 import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
@@ -73,6 +85,7 @@ import io.github.dijksys.quipu.domain.formatting.MarkdownSelection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteEditorScreen(
     onBack: () -> Unit,
@@ -91,11 +104,36 @@ fun NoteEditorScreen(
         mutableStateOf(TextFieldValue(state.content))
     }
     var isPreview by rememberSaveable(state.noteId) { mutableStateOf(false) }
+    var contentFocused by remember { mutableStateOf(false) }
     var showLinkDialog by remember { mutableStateOf(false) }
     var linkLabel by remember { mutableStateOf("") }
     var linkUrl by remember { mutableStateOf("") }
+    var linkSelection by remember { mutableStateOf(MarkdownSelection(0, 0)) }
+    var showTagDialog by remember { mutableStateOf(false) }
+    var tagInput by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
+
+    val imeVisible = WindowInsets.isImeVisible
+    val showToolbar = !isPreview && contentFocused && imeVisible
+
+    val linkColor = MaterialTheme.colorScheme.primary
+    val inlineCodeBackground = MaterialTheme.colorScheme.surfaceVariant
+    val codeBlockBackground = MaterialTheme.colorScheme.surfaceContainerHigh
+    val markerColor = MaterialTheme.colorScheme.primary
+    val visualTransformation = remember(
+        linkColor,
+        inlineCodeBackground,
+        codeBlockBackground,
+        markerColor,
+    ) {
+        MarkdownVisualTransformation(
+            linkColor = linkColor,
+            inlineCodeBackground = inlineCodeBackground,
+            codeBlockBackground = codeBlockBackground,
+            markerColor = markerColor,
+        )
+    }
 
     val messagePinned = stringResource(R.string.note_pinned)
     val messageUnpinned = stringResource(R.string.note_unpinned)
@@ -135,6 +173,7 @@ fun NoteEditorScreen(
 
     val openLinkDialog: () -> Unit = {
         val selection = currentSelection()
+        linkSelection = selection
         linkLabel = if (selection.start != selection.end) {
             editorValue.text.substring(selection.start, selection.end)
         } else {
@@ -266,6 +305,18 @@ fun NoteEditorScreen(
                             onDismissRequest = { showOverflowMenu = false },
                         ) {
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.note_tags_action)) },
+                                leadingIcon = {
+                                    Icon(Icons.AutoMirrored.Rounded.Label, contentDescription = null)
+                                },
+                                enabled = state.hasText,
+                                onClick = {
+                                    showOverflowMenu = false
+                                    tagInput = ""
+                                    showTagDialog = true
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.note_create_reminder)) },
                                 leadingIcon = {
                                     Icon(Icons.Rounded.NotificationsActive, contentDescription = null)
@@ -351,38 +402,36 @@ fun NoteEditorScreen(
                     colors = transparentTextFieldColors(),
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                if (!isPreview) {
-                    Spacer(Modifier.height(QuipuSpacing.xs))
-                    NoteMarkdownToolbar(
-                        onAction = applyToolbarAction,
-                        onHeading = { level ->
-                            applyContent(
-                                MarkdownFormatting.applyHeading(
-                                    editorValue.text,
-                                    currentSelection(),
-                                    level,
-                                ),
-                            )
+
+                if (state.tags.isNotEmpty()) {
+                    TagChips(
+                        tags = state.tags,
+                        onRemove = { tag ->
+                            viewModel.setTags(state.tags - tag)
                         },
                     )
                 }
-                Spacer(Modifier.height(QuipuSpacing.xs))
-                NoteEditorModeToggle(
-                    isPreview = isPreview,
-                    onEdit = {
-                        if (isPreview) {
-                            isPreview = false
-                            contentFocusRequester.requestFocus()
-                        }
-                    },
-                    onPreview = {
-                        if (!isPreview) {
-                            isPreview = true
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        }
-                    },
-                )
+
+                if (!imeVisible) {
+                    Spacer(Modifier.height(QuipuSpacing.xs))
+                    NoteEditorModeToggle(
+                        isPreview = isPreview,
+                        onEdit = {
+                            if (isPreview) {
+                                isPreview = false
+                                contentFocusRequester.requestFocus()
+                            }
+                        },
+                        onPreview = {
+                            if (!isPreview) {
+                                isPreview = true
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            }
+                        },
+                    )
+                }
+
                 Spacer(Modifier.height(QuipuSpacing.xs))
                 if (isPreview) {
                     NoteMarkdownPreview(
@@ -423,6 +472,7 @@ fun NoteEditorScreen(
                             .fillMaxWidth()
                             .weight(1f)
                             .focusRequester(contentFocusRequester)
+                            .onFocusChanged { contentFocused = it.isFocused }
                             .testTag("note_content"),
                         placeholder = {
                             Text(
@@ -432,19 +482,39 @@ fun NoteEditorScreen(
                             )
                         },
                         textStyle = MaterialTheme.typography.bodyLarge,
+                        visualTransformation = visualTransformation,
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,
                         ),
                         colors = transparentTextFieldColors(),
                     )
                 }
-                NoteSaveStatusFooter(
-                    saveStatus = state.saveStatus,
-                    createdAt = state.createdAt,
-                    updatedAt = state.updatedAt,
-                    justCreated = state.justCreated,
-                    onRetry = viewModel::retrySave,
-                )
+
+                if (!imeVisible) {
+                    NoteSaveStatusFooter(
+                        saveStatus = state.saveStatus,
+                        createdAt = state.createdAt,
+                        updatedAt = state.updatedAt,
+                        justCreated = state.justCreated,
+                        onRetry = viewModel::retrySave,
+                    )
+                }
+
+                if (showToolbar) {
+                    Spacer(Modifier.height(QuipuSpacing.xs))
+                    NoteMarkdownToolbar(
+                        onAction = applyToolbarAction,
+                        onHeading = { level ->
+                            applyContent(
+                                MarkdownFormatting.applyHeading(
+                                    editorValue.text,
+                                    currentSelection(),
+                                    level,
+                                ),
+                            )
+                        },
+                    )
+                }
             }
         }
     }
@@ -460,6 +530,24 @@ fun NoteEditorScreen(
             },
             onDismiss = { showDeleteDialog = false },
             destructive = true,
+        )
+    }
+
+    if (showTagDialog) {
+        TagDialog(
+            tags = state.tags,
+            availableTags = state.availableTags,
+            input = tagInput,
+            onInputChange = { tagInput = it },
+            onAdd = { values ->
+                viewModel.setTags(state.tags + values)
+                tagInput = ""
+            },
+            onRemove = { tag -> viewModel.setTags(state.tags - tag) },
+            onDismiss = {
+                showTagDialog = false
+                tagInput = ""
+            },
         )
     }
 
@@ -501,7 +589,7 @@ fun NoteEditorScreen(
                     onClick = {
                         val result = MarkdownFormatting.insertLink(
                             editorValue.text,
-                            currentSelection(),
+                            linkSelection,
                             linkLabel,
                             linkUrl,
                         )
@@ -519,6 +607,137 @@ fun NoteEditorScreen(
             },
         )
     }
+}
+
+@Composable
+private fun TagChips(
+    tags: List<String>,
+    onRemove: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = QuipuSpacing.xxs),
+        horizontalArrangement = Arrangement.spacedBy(QuipuSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        tags.forEach { tag ->
+            InputChip(
+                selected = true,
+                onClick = { onRemove(tag) },
+                label = { Text(tag) },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.note_tags_remove, tag),
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TagDialog(
+    tags: List<String>,
+    availableTags: List<String>,
+    input: String,
+    onInputChange: (String) -> Unit,
+    onAdd: (List<String>) -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val suggestions = availableTags.filterNot { candidate ->
+        tags.any { it.equals(candidate, ignoreCase = true) }
+    }
+    val submit = {
+        val values = input.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        if (values.isNotEmpty()) onAdd(values)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.note_tags_title)) },
+        text = {
+            Column {
+                if (tags.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.note_tags_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(QuipuSpacing.xs),
+                    ) {
+                        tags.forEach { tag ->
+                            InputChip(
+                                selected = true,
+                                onClick = { onRemove(tag) },
+                                label = { Text(tag) },
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Close,
+                                        contentDescription = stringResource(
+                                            R.string.note_tags_remove,
+                                            tag,
+                                        ),
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(QuipuSpacing.sm))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = input,
+                        onValueChange = onInputChange,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text(stringResource(R.string.note_tags_add_hint)) },
+                        singleLine = true,
+                    )
+                    Spacer(Modifier.size(QuipuSpacing.sm))
+                    TextButton(
+                        enabled = input.isNotBlank(),
+                        onClick = submit,
+                    ) {
+                        Text(stringResource(R.string.note_tags_add))
+                    }
+                }
+                if (suggestions.isNotEmpty()) {
+                    Spacer(Modifier.height(QuipuSpacing.sm))
+                    Text(
+                        text = stringResource(R.string.note_tags_suggestions),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(QuipuSpacing.xxs))
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(QuipuSpacing.xs),
+                    ) {
+                        suggestions.forEach { tag ->
+                            QuipuFilterChip(
+                                text = tag,
+                                selected = false,
+                                onClick = { onAdd(listOf(tag)) },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_accept))
+            }
+        },
+    )
 }
 
 @Composable

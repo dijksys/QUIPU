@@ -45,6 +45,7 @@ fun NoteListItem(
     note: Note,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    highlightTerms: List<String> = emptyList(),
     actions: @Composable (() -> Unit)? = null,
 ) {
     QuipuCard(
@@ -58,8 +59,9 @@ fun NoteListItem(
         Row(verticalAlignment = Alignment.Top) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
+                    NoteSearchHighlight(
                         text = note.displayTitle,
+                        terms = highlightTerms,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -77,11 +79,23 @@ fun NoteListItem(
                 }
                 if (note.preview.isNotBlank()) {
                     Spacer(Modifier.height(QuipuSpacing.xs))
-                    Text(
+                    NoteSearchHighlight(
                         text = note.preview,
+                        terms = highlightTerms,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (note.tags.isNotEmpty()) {
+                    Spacer(Modifier.height(QuipuSpacing.xxs))
+                    NoteSearchHighlight(
+                        text = note.tags.joinToString("  ") { "#$it" },
+                        terms = highlightTerms,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }

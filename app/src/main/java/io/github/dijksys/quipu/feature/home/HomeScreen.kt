@@ -30,20 +30,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.dijksys.quipu.R
 import io.github.dijksys.quipu.core.common.DateTimeUtils
 import io.github.dijksys.quipu.core.designsystem.components.QuipuButton
 import io.github.dijksys.quipu.core.designsystem.components.QuipuCard
+import io.github.dijksys.quipu.core.designsystem.components.QuipuSearchField
 import io.github.dijksys.quipu.core.designsystem.components.QuipuSectionHeader
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
@@ -55,6 +60,7 @@ import io.github.dijksys.quipu.feature.reminders.ReminderListItem
 @Composable
 fun HomeScreen(
     onOpenNotes: () -> Unit,
+    onSearchNotes: (String) -> Unit,
     onOpenReminders: () -> Unit,
     onOpenNote: (String) -> Unit,
     onOpenReminder: (String) -> Unit,
@@ -63,6 +69,14 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val submitSearch: () -> Unit = {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        if (searchQuery.isBlank()) onOpenNotes() else onSearchNotes(searchQuery)
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -93,32 +107,15 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(QuipuSpacing.md),
         ) {
             item {
-                Column {
-                    Text(
-                        text = DateTimeUtils.formatLongDate(state.nowMillis)
-                            .replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.testTag("home_date"),
-                    )
-                    Spacer(Modifier.height(QuipuSpacing.xs))
-                    Text(
-                        text = stringResource(R.string.home_heading),
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontSize = 26.sp,
-                            lineHeight = 32.sp,
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.testTag("home_heading"),
-                    )
-                    Spacer(Modifier.height(QuipuSpacing.xs))
-                    Text(
-                        text = stringResource(R.string.home_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.testTag("home_subtitle"),
-                    )
-                }
+                QuipuSearchField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = stringResource(R.string.home_search_placeholder),
+                    onSearch = submitSearch,
+                    modifier = Modifier
+                        .padding(top = QuipuSpacing.xs, bottom = QuipuSpacing.sm)
+                        .testTag("home_search"),
+                )
             }
 
             item {

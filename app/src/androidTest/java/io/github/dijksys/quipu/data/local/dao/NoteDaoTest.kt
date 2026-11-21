@@ -72,22 +72,6 @@ class NoteDaoTest {
     }
 
     @Test
-    fun searchFindsTitleAndContent() = runTest {
-        noteDao.upsert(note("n1", "Lista de compras", content = "Pan y leche"))
-        noteDao.upsert(note("n2", "Ideas", content = "Escribir un artículo"))
-
-        assertEquals(
-            listOf("n1"),
-            noteDao.searchActiveNotes("compras").first().map { it.id },
-        )
-        assertEquals(
-            listOf("n2"),
-            noteDao.searchActiveNotes("artículo").first().map { it.id },
-        )
-        assertTrue(noteDao.searchActiveNotes("inexistente").first().isEmpty())
-    }
-
-    @Test
     fun partialUpdatesAndPermanentDelete() = runTest {
         noteDao.upsert(note("n1", "Nota", updatedAt = 100))
 

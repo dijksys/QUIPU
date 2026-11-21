@@ -1,8 +1,11 @@
 package io.github.dijksys.quipu.fakes
 
 import io.github.dijksys.quipu.domain.model.Note
+import io.github.dijksys.quipu.domain.model.NoteDateRange
 import io.github.dijksys.quipu.domain.model.NoteFilter
+import io.github.dijksys.quipu.domain.model.NoteSortOrder
 import io.github.dijksys.quipu.domain.repository.NoteRepository
+import io.github.dijksys.quipu.domain.search.SearchText
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,16 +41,26 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
 
     override suspend fun getNote(id: String): Note? = notes.value[id]
 
-    override fun searchNotes(query: String, filter: NoteFilter): Flow<List<Note>> =
-        notes.map { stored ->
-            stored.values
-                .filter { it.matches(filter) }
-                .filter {
-                    it.title.contains(query, ignoreCase = true) ||
-                        it.content.contains(query, ignoreCase = true)
+    override fun searchNotes(
+        query: String,
+        filter: NoteFilter,
+        dateRange: NoteDateRange?,
+        sort: NoteSortOrder,
+    ): Flow<List<Note>> = notes.map { stored ->
+        val terms = SearchText.terms(query)
+        stored.values
+            .filter { it.matches(filter) }
+            .filter { note -> dateRange == null || dateRange.contains(note.updatedAt) }
+            .filter { note ->
+                val title = SearchText.normalize(note.title)
+                val content = SearchText.normalize(note.content)
+                val tags = SearchText.normalize(note.tags.joinToString(" "))
+                terms.all { term ->
+                    title.contains(term) || content.contains(term) || tags.contains(term)
                 }
-                .sortedFor(filter)
-        }
+            }
+            .sortedWith(sortComparator(sort, terms))
+    }
 
     override fun observeRecentNotes(limit: Int): Flow<List<Note>> =
         notes.map { stored ->
@@ -68,11 +81,19 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
     override fun observeActiveNotesCount(): Flow<Int> =
         notes.map { stored -> stored.values.count { it.matches(NoteFilter.ACTIVE) } }
 
+    override fun observeTags(): Flow<List<String>> =
+        notes.map { stored -> stored.values.flatMap { it.tags }.distinct().sorted() }
+
     override suspend fun upsertNote(note: Note) {
         writeGate?.await()
         if (failWrites) error("Fallo de escritura simulado")
         upsertCount++
         notes.update { it + (note.id to note) }
+    }
+
+    override suspend fun setNoteTags(noteId: String, tags: List<String>) {
+        if (failWrites) error("Fallo de escritura simulado")
+        update(noteId) { it.copy(tags = tags) }
     }
 
     override suspend fun setPinned(id: String, pinned: Boolean, updatedAt: Long) {
@@ -118,5 +139,26 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
 
         NoteFilter.ARCHIVED -> sortedByDescending { it.archivedAt }
         NoteFilter.TRASH -> sortedByDescending { it.deletedAt }
+    }
+
+    private fun sortComparator(
+        sort: NoteSortOrder,
+        terms: List<String>,
+    ): Comparator<Note> = when (sort) {
+        NoteSortOrder.RECENT -> compareByDescending { it.updatedAt }
+        NoteSortOrder.TITLE -> Comparator<Note> { first, second ->
+            val byTitle = first.displayTitle.compareTo(second.displayTitle, ignoreCase = true)
+            if (byTitle != 0) byTitle else second.updatedAt.compareTo(first.updatedAt)
+        }
+        NoteSortOrder.RELEVANCE -> compareBy<Note> { note ->
+            val title = SearchText.normalize(note.title)
+            val tags = SearchText.normalize(note.tags.joinToString(" "))
+            when {
+                terms.isNotEmpty() && title == terms.joinToString(" ") -> 0
+                terms.any { title.startsWith(it) } -> 1
+                terms.any { tags.contains(it) } -> 2
+                else -> 3
+            }
+        }.thenByDescending { it.updatedAt }
     }
 }

@@ -37,8 +37,6 @@
 
     <!-- Inicio -->
     <string name="home_title">Inicio</string>
-    <string name="home_heading">Organiza tu día.</string>
-    <string name="home_subtitle">Tus notas y recordatorios, en un solo lugar.</string>
     <string name="home_empty_title">Tu espacio está listo</string>
     <string name="home_empty_message">Empieza con una nota rápida o programa tu primer recordatorio.</string>
     <string name="home_new_note">Nueva nota</string>
@@ -60,8 +58,8 @@
     <string name="notes_search_placeholder">Buscar en notas…</string>
     <string name="notes_pinned_section">Fijadas</string>
     <string name="notes_others_section">Otras notas</string>
-    <string name="notes_search_empty_title">Sin resultados</string>
-    <string name="notes_search_empty_message">Prueba con otras palabras o revisa el contenido de tus notas.</string>
+    <string name="notes_search_empty_title">No encontramos notas para esta búsqueda.</string>
+    <string name="notes_search_empty_message">Prueba con otras palabras o modifica los filtros.</string>
     <string name="notes_archived_empty_title">No hay notas archivadas</string>
     <string name="notes_archived_empty_message">Las notas que archives aparecerán aquí para mantenerlas fuera del camino.</string>
     <string name="notes_trash_empty_title">La papelera está vacía</string>
@@ -237,6 +235,38 @@
     <string name="settings_project_repository_description">Código fuente · Licencia MIT</string>
     <string name="settings_project_external_link">Abrir enlace externo</string>
     <string name="settings_project_open_error">No se pudo abrir el enlace. Inténtalo de nuevo.</string>
+
+    <string name="action_search">Buscar</string>
+    <string name="home_search_placeholder">Buscar en tus notas…</string>
+
+    <!-- Búsqueda avanzada -->
+    <string name="notes_search_query_label">Resultados para “%1$s”</string>
+    <plurals name="notes_search_count">
+        <item quantity="one">%1$d resultado</item>
+        <item quantity="other">%1$d resultados</item>
+    </plurals>
+    <string name="notes_filter_date_all">Todas las fechas</string>
+    <string name="notes_filter_date_today">Hoy</string>
+    <string name="notes_filter_date_week">Últimos 7 días</string>
+    <string name="notes_filter_date_month">Últimos 30 días</string>
+    <string name="notes_filter_date_custom">Rango personalizado</string>
+    <string name="notes_sort_relevance">Relevancia</string>
+    <string name="notes_sort_recent">Más recientes</string>
+    <string name="notes_sort_title">Título</string>
+    <string name="notes_filter_clear">Borrar filtros</string>
+    <string name="notes_custom_range_title">Rango personalizado</string>
+    <string name="notes_custom_range_start">Desde</string>
+    <string name="notes_custom_range_end">Hasta</string>
+    <string name="notes_custom_range_apply">Aplicar</string>
+
+    <!-- Etiquetas -->
+    <string name="note_tags_action">Etiquetas</string>
+    <string name="note_tags_title">Etiquetas de la nota</string>
+    <string name="note_tags_add_hint">Añadir o crear etiqueta</string>
+    <string name="note_tags_add">Añadir</string>
+    <string name="note_tags_empty">Sin etiquetas</string>
+    <string name="note_tags_remove">Quitar etiqueta %1$s</string>
+    <string name="note_tags_suggestions">Etiquetas existentes</string>
 
     <!-- Notificaciones -->
     <string name="notification_channel_reminders">Recordatorios</string>

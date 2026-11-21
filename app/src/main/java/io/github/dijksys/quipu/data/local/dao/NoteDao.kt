@@ -2,8 +2,13 @@ package io.github.dijksys.quipu.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Upsert
+import androidx.sqlite.db.SupportSQLiteQuery
 import io.github.dijksys.quipu.data.local.entity.NoteEntity
+import io.github.dijksys.quipu.data.local.entity.NoteFtsEntity
+import io.github.dijksys.quipu.data.local.entity.NoteTagCrossRef
+import io.github.dijksys.quipu.data.local.entity.NoteTagEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -56,35 +61,15 @@ interface NoteDao {
     )
     fun observePinnedNotes(limit: Int): Flow<List<NoteEntity>>
 
-    @Query(
-        """
-        SELECT * FROM notes
-        WHERE deletedAt IS NULL AND archivedAt IS NULL
-          AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%')
-        ORDER BY isPinned DESC, updatedAt DESC
-        """,
+    @RawQuery(
+        observedEntities = [
+            NoteEntity::class,
+            NoteFtsEntity::class,
+            NoteTagEntity::class,
+            NoteTagCrossRef::class,
+        ],
     )
-    fun searchActiveNotes(query: String): Flow<List<NoteEntity>>
-
-    @Query(
-        """
-        SELECT * FROM notes
-        WHERE deletedAt IS NULL AND archivedAt IS NOT NULL
-          AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%')
-        ORDER BY archivedAt DESC
-        """,
-    )
-    fun searchArchivedNotes(query: String): Flow<List<NoteEntity>>
-
-    @Query(
-        """
-        SELECT * FROM notes
-        WHERE deletedAt IS NOT NULL
-          AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%')
-        ORDER BY deletedAt DESC
-        """,
-    )
-    fun searchTrashedNotes(query: String): Flow<List<NoteEntity>>
+    fun searchNotes(query: SupportSQLiteQuery): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
     fun observeNote(id: String): Flow<NoteEntity?>

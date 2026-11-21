@@ -3,6 +3,8 @@ package io.github.dijksys.quipu.core.database
 import android.content.Context
 import androidx.room.Room
 import io.github.dijksys.quipu.data.local.dao.NoteDao
+import io.github.dijksys.quipu.data.local.dao.NoteFtsDao
+import io.github.dijksys.quipu.data.local.dao.NoteTagDao
 import io.github.dijksys.quipu.data.local.dao.ReminderDao
 import dagger.Module
 import dagger.Provides
@@ -32,4 +34,10 @@ object DatabaseModule {
 
     @Provides
     fun provideReminderDao(database: AppDatabase): ReminderDao = database.reminderDao()
+
+    @Provides
+    fun provideNoteFtsDao(database: AppDatabase): NoteFtsDao = database.noteFtsDao()
+
+    @Provides
+    fun provideNoteTagDao(database: AppDatabase): NoteTagDao = database.noteTagDao()
 }

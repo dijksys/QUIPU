@@ -5,9 +5,10 @@ diseñada para funcionar **completamente sin conexión**, con almacenamiento loc
 y una interfaz minimalista en español.
 
 La Fase 1 está implementada: CRUD de notas con guardado automático, papelera,
-archivado, búsqueda, recordatorios con alarmas locales, notificaciones,
-reprogramación tras reinicios, ajustes de tema y pruebas unitarias e
-instrumentadas. El editor admite Markdown con barra de formato y vista previa.
+archivado, búsqueda FTS con etiquetas, recordatorios con alarmas locales,
+notificaciones, reprogramación tras reinicios, ajustes de tema y pruebas
+unitarias e instrumentadas. El editor admite Markdown con formato visual en
+tiempo real, barra acoplada al teclado y vista previa.
 
 En una instalación nueva, QUIPU muestra una pantalla de bienvenida y no vuelve
 a mostrarla después de pulsar Comenzar. Las instalaciones actualizadas desde
@@ -76,10 +77,10 @@ Las pruebas instrumentadas requieren un emulador o dispositivo conectado
 minuto porque espera el disparo real de AlarmManager y la publicación de la
 notificación.
 
-Estado verificado en la Fase 1: **50 pruebas unitarias** y **19 pruebas
-instrumentadas** en emulador Pixel 7 con API 37, todas en verde. `lintDebug` no
-reporta errores. También se verificaron manualmente la persistencia y la
-reprogramación de alarmas tras reiniciar el emulador.
+Estado verificado en la Fase 1: **147 pruebas unitarias** y **56 pruebas
+instrumentadas** en un Motorola moto g34 5G con Android 15 (API 35), todas en
+verde. `lintDebug` no reporta errores. También se verificaron manualmente la
+persistencia, la búsqueda FTS, el editor y la reprogramación de alarmas.
 
 ## Permisos
 
@@ -114,7 +115,9 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - Notas con guardado automático (debounce de 600 ms + volcado al salir).
 - Crear, editar, fijar, archivar, mover a papelera, restaurar y borrar
   definitivamente.
-- Búsqueda por título y contenido en notas activas, archivadas y papelera.
+- Búsqueda FTS por título, contenido y etiquetas, con filtros de fecha,
+  ordenación y resaltado de coincidencias.
+- Buscador prominente en Inicio que abre Notas con la consulta.
 - Fechas de creación y última modificación visibles.
 - Recordatorios con título, descripción, fecha, hora y nota vinculada opcional.
 - Notificación local con apertura directa del recordatorio.
@@ -128,7 +131,8 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 
 - La interfaz está en español; las fechas se formatean con locale español.
 - No hay recurrencia de recordatorios ni sincronización en la nube.
-- La búsqueda usa `LIKE`; no hay índice FTS todavía.
+- La búsqueda FTS no ofrece búsqueda difusa ni subcadenas internas.
+- La ordenación por título usa `COLLATE NOCASE` de SQLite (cobertura ASCII).
 - El permiso de alarmas exactas depende del fabricante y de la versión de
   Android. Si no se concede, las notificaciones pueden retrasarse.
 - Al borrar definitivamente una nota, sus recordatorios se conservan y quedan
@@ -141,6 +145,7 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/FEATURES.md](docs/FEATURES.md)
+- [docs/FEATURES/ADVANCED_SEARCH.md](docs/FEATURES/ADVANCED_SEARCH.md)
 - [docs/FEATURES/MARKDOWN_EDITOR.md](docs/FEATURES/MARKDOWN_EDITOR.md)
 - [docs/BRANDING.md](docs/BRANDING.md)
 - [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md)

@@ -15,6 +15,7 @@ data class Note(
     val isPinned: Boolean = false,
     val archivedAt: Long? = null,
     val deletedAt: Long? = null,
+    val tags: List<String> = emptyList(),
 ) {
     val isArchived: Boolean get() = archivedAt != null
     val isDeleted: Boolean get() = deletedAt != null

@@ -1,18 +1,27 @@
 package io.github.dijksys.quipu.feature.notes
 
 import io.github.dijksys.quipu.domain.model.Note
+import io.github.dijksys.quipu.domain.model.NoteDateFilter
+import io.github.dijksys.quipu.domain.model.NoteDateRange
 import io.github.dijksys.quipu.domain.model.NoteFilter
+import io.github.dijksys.quipu.domain.model.NoteSortOrder
 
 data class NotesUiState(
     val filter: NoteFilter = NoteFilter.ACTIVE,
     val query: String = "",
     val notes: List<Note> = emptyList(),
     val isLoading: Boolean = true,
+    val dateFilter: NoteDateFilter = NoteDateFilter.ALL,
+    val customDateRange: NoteDateRange? = null,
+    val sortOrder: NoteSortOrder = NoteSortOrder.RELEVANCE,
 ) {
     val isActive: Boolean get() = filter == NoteFilter.ACTIVE
     val isArchived: Boolean get() = filter == NoteFilter.ARCHIVED
     val isTrash: Boolean get() = filter == NoteFilter.TRASH
     val isEmpty: Boolean get() = !isLoading && notes.isEmpty()
+    val isSearching: Boolean get() = query.isNotBlank()
+    val hasActiveFilters: Boolean
+        get() = dateFilter != NoteDateFilter.ALL || sortOrder != NoteSortOrder.RELEVANCE
 }
 
 sealed interface NotesEvent {
@@ -47,6 +56,8 @@ data class NoteEditorUiState(
     val updatedAt: Long? = null,
     val justCreated: Boolean = false,
     val isMissing: Boolean = false,
+    val tags: List<String> = emptyList(),
+    val availableTags: List<String> = emptyList(),
 ) {
     val hasText: Boolean get() = title.isNotBlank() || content.isNotBlank()
 }

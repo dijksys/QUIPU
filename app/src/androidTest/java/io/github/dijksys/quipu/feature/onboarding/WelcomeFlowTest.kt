@@ -76,7 +76,7 @@ class WelcomeFlowTest {
 
         composeRule.onNodeWithTag("welcome_start").performClick()
 
-        waitForTag("home_heading")
+        waitForTag("home_search")
         composeRule.onNodeWithTag("welcome_start").assertDoesNotExist()
         assertEquals(
             true,
@@ -86,7 +86,7 @@ class WelcomeFlowTest {
         )
 
         scenario?.recreate()
-        waitForTag("home_heading")
+        waitForTag("home_search")
         composeRule.onNodeWithTag("welcome_start").assertDoesNotExist()
     }
 

@@ -4,10 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.dijksys.quipu.domain.model.Note
+import io.github.dijksys.quipu.domain.search.SearchText
 import io.github.dijksys.quipu.domain.usecase.notes.ArchiveNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.CreateNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.DeleteNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.GetNoteUseCase
+import io.github.dijksys.quipu.domain.usecase.notes.ObserveTagsUseCase
+import io.github.dijksys.quipu.domain.usecase.notes.SetNoteTagsUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.TogglePinNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.UpdateNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,6 +42,8 @@ class NoteEditorViewModel @Inject constructor(
     private val togglePin: TogglePinNoteUseCase,
     private val archiveNote: ArchiveNoteUseCase,
     private val deleteNote: DeleteNoteUseCase,
+    private val setNoteTags: SetNoteTagsUseCase,
+    private val observeTags: ObserveTagsUseCase,
 ) : ViewModel() {
 
     private val noteIdArg: String = savedStateHandle.get<String>(ARG_NOTE_ID) ?: NEW_NOTE_ID
@@ -68,14 +73,21 @@ class NoteEditorViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            observeTags().collect { tags ->
+                _uiState.update { it.copy(availableTags = tags) }
+            }
+        }
+        viewModelScope.launch {
             val storedNote = getNote(noteId)
             val draftTitle = savedStateHandle.get<String>(KEY_DRAFT_TITLE)
             val draftContent = savedStateHandle.get<String>(KEY_DRAFT_CONTENT)
+            val draftTags = savedStateHandle.get<ArrayList<String>>(KEY_DRAFT_TAGS)
 
             if (storedNote != null) {
                 currentNote = storedNote
                 val restoredTitle = draftTitle ?: storedNote.title
                 val restoredContent = draftContent ?: storedNote.content
+                val restoredTags = draftTags ?: ArrayList(storedNote.tags)
                 val hasPendingDraft = restoredTitle.trim() != storedNote.title ||
                     restoredContent != storedNote.content
                 _uiState.update {
@@ -85,6 +97,7 @@ class NoteEditorViewModel @Inject constructor(
                         isPersisted = true,
                         title = restoredTitle,
                         content = restoredContent,
+                        tags = restoredTags,
                         isPinned = storedNote.isPinned,
                         isArchived = storedNote.isArchived,
                         saveStatus = if (hasPendingDraft) {
@@ -108,6 +121,7 @@ class NoteEditorViewModel @Inject constructor(
                         isPersisted = false,
                         title = restoredTitle,
                         content = restoredContent,
+                        tags = draftTags.orEmpty(),
                         saveStatus = if (hasText) {
                             NoteSaveStatus.UNSAVED
                         } else {
@@ -136,6 +150,29 @@ class NoteEditorViewModel @Inject constructor(
     fun onContentChange(value: String) {
         applyEdit { it.copy(content = value) }
         savedStateHandle[KEY_DRAFT_CONTENT] = value
+    }
+
+    /** Las etiquetas se guardan aparte del contenido y sin tocar updatedAt. */
+    fun setTags(tags: List<String>) {
+        val cleaned = tags
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinctBy { SearchText.normalizeTag(it) }
+        _uiState.update { it.copy(tags = cleaned) }
+        savedStateHandle[KEY_DRAFT_TAGS] = ArrayList(cleaned)
+
+        val note = currentNote ?: return
+        viewModelScope.launch {
+            runCatching {
+                setNoteTags(note.id, cleaned)
+                getNote(note.id)
+            }.onSuccess { refreshed ->
+                currentNote = refreshed ?: note.copy(tags = cleaned)
+                _uiState.update { it.copy(tags = currentNote?.tags ?: cleaned) }
+            }.onFailure {
+                eventChannel.send(NoteEditorEvent.Failure)
+            }
+        }
     }
 
     /** Cancela el debounce y escribe inmediatamente (al salir de la pantalla). */
@@ -311,28 +348,36 @@ class NoteEditorViewModel @Inject constructor(
             } else {
                 updateNote(existing.copy(title = snapshot.title, content = snapshot.content))
             }
-            currentNote = saved
+            val desiredTags = snapshot.tags
+            val savedWithTags = if (desiredTags != saved.tags) {
+                setNoteTags(saved.id, desiredTags)
+                saved.copy(tags = desiredTags)
+            } else {
+                saved
+            }
+            currentNote = savedWithTags
 
             val latest = _uiState.value
-            val stillPending = latest.title.trim() != saved.title ||
-                latest.content != saved.content
+            val stillPending = latest.title.trim() != savedWithTags.title ||
+                latest.content != savedWithTags.content
             _uiState.update {
                 it.copy(
                     isPersisted = true,
-                    isPinned = saved.isPinned,
-                    isArchived = saved.isArchived,
+                    isPinned = savedWithTags.isPinned,
+                    isArchived = savedWithTags.isArchived,
+                    tags = savedWithTags.tags,
                     saveStatus = if (stillPending) {
                         NoteSaveStatus.UNSAVED
                     } else {
                         NoteSaveStatus.SAVED
                     },
-                    createdAt = saved.createdAt,
-                    updatedAt = saved.updatedAt,
+                    createdAt = savedWithTags.createdAt,
+                    updatedAt = savedWithTags.updatedAt,
                     justCreated = existing == null && !stillPending,
                 )
             }
             if (stillPending) ensureAutoSaveScheduled()
-            saved
+            savedWithTags
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (_: Throwable) {
@@ -348,6 +393,7 @@ class NoteEditorViewModel @Inject constructor(
         private const val KEY_DRAFT_ID = "draft_note_id"
         private const val KEY_DRAFT_TITLE = "draft_title"
         private const val KEY_DRAFT_CONTENT = "draft_content"
+        private const val KEY_DRAFT_TAGS = "draft_tags"
         private const val AUTO_SAVE_DELAY_MILLIS = 600L
     }
 }

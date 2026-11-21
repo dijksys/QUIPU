@@ -7,6 +7,8 @@ import io.github.dijksys.quipu.domain.usecase.notes.ArchiveNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.CreateNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.DeleteNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.GetNoteUseCase
+import io.github.dijksys.quipu.domain.usecase.notes.ObserveTagsUseCase
+import io.github.dijksys.quipu.domain.usecase.notes.SetNoteTagsUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.TogglePinNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.UpdateNoteUseCase
 import io.github.dijksys.quipu.fakes.FakeNoteRepository
@@ -387,6 +389,39 @@ class NoteEditorViewModelTest {
         assertTrue(viewModel.uiState.value.isMissing)
     }
 
+    @Test
+    fun `tags added before the first save persist with the note`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        runCurrent()
+
+        viewModel.setTags(listOf("Ideas", "ideas", "Trabajo"))
+        viewModel.onTitleChange("Nota con etiquetas")
+        viewModel.onContentChange("Contenido")
+        advanceTimeBy(700)
+        runCurrent()
+        advanceUntilIdle()
+
+        val stored = repository.currentNotes.single()
+        assertEquals(listOf("Ideas", "Trabajo"), stored.tags)
+        assertEquals(listOf("Ideas", "Trabajo"), viewModel.uiState.value.tags)
+    }
+
+    @Test
+    fun `tags on a persisted note update immediately without touching updatedAt`() =
+        runTest(dispatcher) {
+            val stored = note("n1", "Nota", "Contenido")
+            repository.preload(stored)
+            val viewModel = createViewModel(noteId = "n1")
+            advanceUntilIdle()
+
+            viewModel.setTags(listOf("Trabajo"))
+            advanceUntilIdle()
+
+            assertEquals(listOf("Trabajo"), repository.getStored("n1")!!.tags)
+            assertEquals(stored.updatedAt, repository.getStored("n1")!!.updatedAt)
+            assertEquals(listOf("Trabajo"), viewModel.uiState.value.tags)
+        }
+
     private fun createViewModel(
         noteId: String = NoteEditorViewModel.NEW_NOTE_ID,
         draftTitle: String? = null,
@@ -406,6 +441,8 @@ class NoteEditorViewModelTest {
             togglePin = TogglePinNoteUseCase(repository, clock),
             archiveNote = ArchiveNoteUseCase(repository, clock),
             deleteNote = DeleteNoteUseCase(repository, clock),
+            setNoteTags = SetNoteTagsUseCase(repository),
+            observeTags = ObserveTagsUseCase(repository),
         )
     }
 

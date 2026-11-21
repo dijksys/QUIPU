@@ -15,7 +15,12 @@ Estado de la Fase 1 de QUIPU.
 - [x] Mover a papelera con opción de deshacer.
 - [x] Restaurar notas eliminadas.
 - [x] Eliminar definitivamente y vaciar la papelera con confirmación.
-- [x] Buscar por título y contenido.
+- [x] Buscar por título, contenido y etiquetas con FTS4.
+- [x] Búsqueda sin distinción de tildes o mayúsculas y coincidencias por prefijo.
+- [x] Filtros por estado y fecha, y ordenación por relevancia, fecha o título.
+- [x] Resaltado de coincidencias y extractos Markdown limpios.
+- [x] Etiquetas normalizadas reutilizables desde el editor.
+- [x] Editor con formato visual en tiempo real y barra acoplada al teclado.
 - [x] Fechas de creación y última modificación visibles.
 - [x] Listados de activas, archivadas y papelera.
 
@@ -36,6 +41,7 @@ Estado de la Fase 1 de QUIPU.
 
 ### Inicio
 
+- [x] Buscador prominente que abre Notas con la consulta.
 - [x] Resumen de notas y recordatorios pendientes.
 - [x] Notas fijadas.
 - [x] Notas recientes.
@@ -55,8 +61,9 @@ Estado de la Fase 1 de QUIPU.
 - [x] Hilt, KSP, Room, DataStore y Navigation Compose.
 - [x] Pruebas unitarias de casos de uso y ViewModels.
 - [x] Pruebas instrumentadas de DAOs.
+- [x] Pruebas instrumentadas de búsqueda FTS, etiquetas y migración 1 → 2.
 - [x] Pruebas instrumentadas de estados vacíos.
-- [x] Pruebas de flujo de usuario de nota y recordatorio.
+- [x] Pruebas de flujo de usuario de nota, búsqueda y recordatorio.
 - [x] Prueba de integración de alarma y notificación en emulador.
 - [x] `lintDebug` sin errores.
 - [x] Documentación de arquitectura y permisos.
@@ -64,11 +71,10 @@ Estado de la Fase 1 de QUIPU.
 ## Pendiente para fases posteriores
 
 - [ ] Recordatorios recurrentes (diarios, semanales, personalizados).
-- [ ] Búsqueda avanzada con FTS.
 - [ ] Exportación e importación de datos.
 - [ ] Copia de seguridad en la nube opcional.
 - [ ] Widgets de pantalla de inicio.
-- [ ] Adjuntos, imágenes y listas de verificación.
+- [ ] Adjuntos e imágenes.
 - [ ] Notas colaborativas o multiusuario.
 - [ ] Localización a otros idiomas.
 - [ ] Sincronización entre dispositivos.
@@ -84,3 +90,6 @@ Estado de la Fase 1 de QUIPU.
   elimina.
 - La papelera no tiene purga automática por antigüedad.
 - La interfaz está en español y no se han añadido traducciones.
+- FTS4 no ofrece BM25; la relevancia usa prioridades deterministas.
+- No hay búsqueda difusa, comodines internos ni subcadenas arbitrarias.
+- El editor no admite WYSIWYG total, HTML, listas anidadas ni imágenes.
