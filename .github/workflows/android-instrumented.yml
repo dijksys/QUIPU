@@ -49,10 +49,10 @@ jobs:
           packages: platform-tools
 
       - name: Install Android SDK 37
-        run: >-
-          sdkmanager --channel=3
-          "platforms;android-37.0"
-          "build-tools;36.0.0"
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          chmod +x "$SDKMANAGER"
+          "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Enable KVM
         run: |
@@ -74,7 +74,7 @@ jobs:
           emulator-options: >-
             -no-window -gpu swiftshader_indirect -no-snapshot -noaudio
             -no-boot-anim -camera-back none
-          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          script: chmod +x gradlew && ./gradlew --no-daemon :app:connectedDebugAndroidTest
 
       - name: Upload instrumented test reports
         if: always()
