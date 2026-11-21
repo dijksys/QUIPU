@@ -50,8 +50,7 @@ jobs:
 
       - name: Install Android SDK 37
         run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-          chmod +x "$SDKMANAGER"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
           "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Run unit tests
@@ -101,8 +100,7 @@ jobs:
 
       - name: Install Android SDK 37
         run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-          chmod +x "$SDKMANAGER"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
           "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Run lint
@@ -155,8 +153,7 @@ jobs:
 
       - name: Install Android SDK 37
         run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-          chmod +x "$SDKMANAGER"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
           "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Compile and assemble Debug
