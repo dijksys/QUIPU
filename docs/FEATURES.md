@@ -20,7 +20,9 @@ Estado de la Fase 1 de QUIPU.
 - [x] Filtros por estado y fecha, y ordenación por relevancia, fecha o título.
 - [x] Resaltado de coincidencias y extractos Markdown limpios.
 - [x] Etiquetas normalizadas reutilizables desde el editor.
-- [x] Editor con formato visual en tiempo real y barra acoplada al teclado.
+- [x] Editor único con formato visual en tiempo real, sin selector de vista previa.
+- [x] Barra acoplada al teclado y estable al aplicar encabezados.
+- [x] Detección automática de URLs y apertura en el navegador externo.
 - [x] Fechas de creación y última modificación visibles.
 - [x] Listados de activas, archivadas y papelera.
 

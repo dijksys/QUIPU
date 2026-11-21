@@ -12,14 +12,15 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.em
-import io.github.dijksys.quipu.domain.formatting.MarkdownVisualPlanner
+import io.github.dijksys.quipu.domain.formatting.MarkdownVisualPlan
 import io.github.dijksys.quipu.domain.formatting.MarkdownVisualStyle
 
 /**
- * Representaci��n visual del Markdown mientras se edita. Solo transforma la
- * presentaci��n: el TextFieldValue y el contenido persistido no cambian.
+ * Representación visual del Markdown mientras se edita. Solo transforma la
+ * presentación: el TextFieldValue y el contenido persistido no cambian.
  */
 class MarkdownVisualTransformation(
+    private val plan: MarkdownVisualPlan,
     private val linkColor: Color,
     private val inlineCodeBackground: Color,
     private val codeBlockBackground: Color,
@@ -27,7 +28,6 @@ class MarkdownVisualTransformation(
 ) : VisualTransformation {
 
     override fun filter(text: AnnotatedString): TransformedText {
-        val plan = MarkdownVisualPlanner.plan(text.text)
         val annotated = buildAnnotatedString {
             append(plan.text)
             plan.styles.forEach { range ->

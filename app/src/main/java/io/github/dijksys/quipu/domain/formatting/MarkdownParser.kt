@@ -1,7 +1,5 @@
 package io.github.dijksys.quipu.domain.formatting
 
-import java.net.URI
-
 /**
  * Parser Markdown deliberadamente pequeño para el subconjunto de QUIPU.
  * No interpreta HTML, imágenes ni extensiones fuera de las documentadas.
@@ -112,16 +110,10 @@ object MarkdownParser {
 
     fun parseInline(text: String): List<MarkdownInline> = parseInlineRange(text)
 
-    internal fun isValidHttpUrl(url: String): Boolean = try {
-        val uri = URI(url)
-        val scheme = uri.scheme?.lowercase()
-        uri.isAbsolute &&
-            (scheme == "http" || scheme == "https") &&
-            !uri.host.isNullOrBlank() &&
-            url.none { it.isWhitespace() }
-    } catch (_: Exception) {
-        false
-    }
+    internal fun isValidHttpUrl(url: String): Boolean = AutoLinkDetector.isValidHttpUrl(url)
+
+    fun isPotentialAutoLinkStart(text: String, index: Int): Boolean =
+        AutoLinkDetector.isPotentialStart(text, index)
 
     private fun findClosingFence(lines: List<String>, start: Int): Int? {
         for (index in start until lines.size) {
@@ -191,14 +183,51 @@ object MarkdownParser {
                     }
                 }
 
+                text[index] == '!' && index + 1 < text.length && text[index + 1] == '[' -> {
+                    val labelEnd = text.indexOf("](", index + 2)
+                    val urlEnd = if (labelEnd >= 0) text.indexOf(')', labelEnd + 2) else -1
+                    if (labelEnd > index + 2 && urlEnd > labelEnd + 2) {
+                        plain.append(text.substring(index, urlEnd + 1))
+                        index = urlEnd + 1
+                    } else {
+                        plain.append('!')
+                        index++
+                    }
+                }
+
                 text[index] == '[' && (index == 0 || text[index - 1] != '!') -> {
-                    val link = parseLink(text, index)
+                    val link = AutoLinkDetector.markdownLinkAt(text, index)
                     if (link != null) {
                         flushText()
-                        result += link.inline
+                        result += MarkdownInline.Link(
+                            text = link.visibleText,
+                            url = link.normalizedUrl,
+                        )
                         index = link.end
                     } else {
-                        plain.append('[')
+                        val labelEnd = text.indexOf("](", index + 1)
+                        val urlEnd = if (labelEnd >= 0) text.indexOf(')', labelEnd + 2) else -1
+                        if (labelEnd > index + 1 && urlEnd > labelEnd + 2) {
+                            plain.append(text.substring(index, urlEnd + 1))
+                            index = urlEnd + 1
+                        } else {
+                            plain.append('[')
+                            index++
+                        }
+                    }
+                }
+
+                AutoLinkDetector.isPotentialStart(text, index) -> {
+                    val link = AutoLinkDetector.findAt(text, index)
+                    if (link != null) {
+                        flushText()
+                        result += MarkdownInline.Link(
+                            text = link.visibleText,
+                            url = link.normalizedUrl,
+                        )
+                        index = link.end
+                    } else {
+                        plain.append(text[index])
                         index++
                     }
                 }
@@ -211,26 +240,6 @@ object MarkdownParser {
         }
         flushText()
         return result
-    }
-
-    private data class ParsedLink(
-        val inline: MarkdownInline.Link,
-        val end: Int,
-    )
-
-    private fun parseLink(text: String, start: Int): ParsedLink? {
-        val labelEnd = text.indexOf("](", start + 1)
-        if (labelEnd <= start + 1) return null
-        val urlEnd = text.indexOf(')', labelEnd + 2)
-        if (urlEnd <= labelEnd + 2) return null
-
-        val label = text.substring(start + 1, labelEnd)
-        val url = text.substring(labelEnd + 2, urlEnd)
-        if (!isValidHttpUrl(url)) return null
-        return ParsedLink(
-            inline = MarkdownInline.Link(text = label, url = url),
-            end = urlEnd + 1,
-        )
     }
 
     private fun findItalicClose(text: String, start: Int): Int {

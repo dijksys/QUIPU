@@ -2,6 +2,7 @@ package io.github.dijksys.quipu.feature
 
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -16,7 +17,6 @@ import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.text.TextRange
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.dijksys.quipu.MainActivity
 import io.github.dijksys.quipu.R
@@ -62,7 +62,10 @@ class UserFlowTest {
     }
 
     @Test
-    fun markdownFormattingKeepsSelectionAndPreview() {
+    fun markdownFormattingKeepsSelectionFocusAndAutosave() {
+        val unique = System.currentTimeMillis()
+        val title = "Markdown E2E $unique"
+
         composeRule.waitUntil(timeoutMillis = 10_000) {
             composeRule.onAllNodesWithTag("home_new_note").fetchSemanticsNodes().isNotEmpty()
         }
@@ -70,8 +73,9 @@ class UserFlowTest {
         composeRule.waitUntil(timeoutMillis = 10_000) {
             composeRule.onAllNodesWithTag("note_content").fetchSemanticsNodes().isNotEmpty()
         }
+        composeRule.onNodeWithTag("markdown_bold").assertDoesNotExist()
 
-        composeRule.onNodeWithTag("note_title").performTextInput("Markdown E2E")
+        composeRule.onNodeWithTag("note_title").performTextInput(title)
         composeRule.onNodeWithTag("note_content").performTextInput("Hola mundo")
         composeRule.waitUntil(timeoutMillis = 10_000) {
             composeRule.onAllNodesWithTag("markdown_bold").fetchSemanticsNodes().isNotEmpty()
@@ -81,19 +85,34 @@ class UserFlowTest {
         composeRule.onNodeWithTag("markdown_bold").performClick()
         composeRule.onNodeWithTag("note_content").assertTextContains("Hola **mundo**")
 
-        Espresso.closeSoftKeyboard()
-        composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithTag("note_mode_preview").fetchSemanticsNodes().isNotEmpty()
-        }
-        composeRule.onNodeWithTag("note_mode_preview").performClick()
-        composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithTag("note_markdown_preview")
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        composeRule.onNodeWithText("Hola mundo").assertIsDisplayed()
+        composeRule.onNodeWithTag("markdown_heading").performClick()
+        composeRule.onNodeWithText(context.getString(R.string.note_markdown_h2))
+            .performClick()
 
-        composeRule.onNodeWithTag("note_mode_edit").performClick()
-        composeRule.onNodeWithTag("note_content").assertTextContains("Hola **mundo**")
+        composeRule.onNodeWithTag("note_content").assertIsFocused()
+        composeRule.onNodeWithTag("markdown_bold").assertIsDisplayed()
+        composeRule.onNodeWithTag("note_content")
+            .assertTextContains("## Hola **mundo**")
+
+        composeRule.onNodeWithTag("note_content")
+            .performTextInputSelection(TextRange(17, 17))
+        composeRule.onNodeWithTag("note_content").performTextInput(" final")
+        composeRule.onNodeWithTag("note_content")
+            .assertTextContains("## Hola **mundo** final")
+        composeRule.onNodeWithTag("note_mode_preview").assertDoesNotExist()
+
+        composeRule.onNodeWithContentDescription(
+            context.getString(R.string.action_back),
+        ).performClick()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onAllNodesWithText(title)[0].performClick()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("note_content").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("note_content")
+            .assertTextContains("## Hola **mundo** final")
     }
 
     @Test

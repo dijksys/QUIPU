@@ -3,6 +3,8 @@ package io.github.dijksys.quipu.feature.notes
 import androidx.lifecycle.SavedStateHandle
 import io.github.dijksys.quipu.domain.model.Note
 import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
+import io.github.dijksys.quipu.domain.formatting.MarkdownFormatting
+import io.github.dijksys.quipu.domain.formatting.MarkdownSelection
 import io.github.dijksys.quipu.domain.usecase.notes.ArchiveNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.CreateNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.DeleteNoteUseCase
@@ -378,6 +380,47 @@ class NoteEditorViewModelTest {
         advanceUntilIdle()
 
         assertEquals("# Título\n\n- [x] Uno", repository.getStored(noteId)!!.content)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `all formatting operations persist the original markdown`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        runCurrent()
+        viewModel.onTitleChange("Formatos")
+        viewModel.onContentChange("texto")
+        advanceUntilIdle()
+
+        val noteId = repository.currentNotes.single().id
+        val selection = MarkdownSelection(0, 5)
+        val results = listOf(
+            MarkdownFormatting.toggleBold("texto", selection),
+            MarkdownFormatting.toggleItalic("texto", selection),
+            MarkdownFormatting.applyHeading("texto", selection, 1),
+            MarkdownFormatting.applyHeading("texto", selection, 2),
+            MarkdownFormatting.applyHeading("texto", selection, 3),
+            MarkdownFormatting.applyUnorderedList("texto", selection),
+            MarkdownFormatting.applyOrderedList("texto", selection),
+            MarkdownFormatting.applyChecklist("texto", selection),
+            MarkdownFormatting.insertCodeBlock("texto", selection),
+        )
+
+        results.forEach { result ->
+            viewModel.onContentChange(result.text)
+            advanceTimeBy(700)
+            runCurrent()
+            advanceUntilIdle()
+
+            assertEquals(result.text, repository.getStored(noteId)!!.content)
+            assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+        }
+
+        val pasted = "Texto pegado https://example.com/path"
+        viewModel.onContentChange(pasted)
+        advanceUntilIdle()
+
+        assertEquals(pasted, repository.getStored(noteId)!!.content)
+        assertEquals(pasted, viewModel.uiState.value.content)
         assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
     }
 

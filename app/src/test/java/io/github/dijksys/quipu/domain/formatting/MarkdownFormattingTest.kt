@@ -69,6 +69,42 @@ class MarkdownFormattingTest {
     }
 
     @Test
+    fun `heading preserves the selected text after adding the prefix`() {
+        val result = MarkdownFormatting.applyHeading(
+            "Hola **mundo**",
+            MarkdownSelection(7, 12),
+            2,
+        )
+
+        assertEquals("## Hola **mundo**", result.text)
+        assertEquals(MarkdownSelection(10, 15), result.selection)
+    }
+
+    @Test
+    fun `heading with a collapsed cursor keeps the caret in place`() {
+        val result = MarkdownFormatting.applyHeading(
+            "## Hola mundo",
+            MarkdownSelection(10, 10),
+            3,
+        )
+
+        assertEquals("### Hola mundo", result.text)
+        assertEquals(MarkdownSelection(11, 11), result.selection)
+    }
+
+    @Test
+    fun `heading applies to several selected lines and keeps a selection`() {
+        val result = MarkdownFormatting.applyHeading(
+            "uno\ndos",
+            MarkdownSelection(0, 7),
+            1,
+        )
+
+        assertEquals("# uno\n# dos", result.text)
+        assertEquals(MarkdownSelection(2, 11), result.selection)
+    }
+
+    @Test
     fun `unordered list applies to every selected line`() {
         val result = MarkdownFormatting.applyUnorderedList(
             "uno\ndos",

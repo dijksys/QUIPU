@@ -235,11 +235,40 @@ object MarkdownFormatting {
                 .coerceIn(firstLineStart, result.length)
             MarkdownSelection(caret, caret)
         } else {
-            val selectionStart = (firstLineStart + newPrefixLength)
-                .coerceIn(firstLineStart, result.length)
-            val selectionEnd = (firstLineStart + newRegion.length)
-                .coerceIn(selectionStart, result.length)
-            MarkdownSelection(selectionStart, selectionEnd)
+            val oldLineStarts = mutableListOf<Int>()
+            var oldCursor = firstLineStart
+            oldLines.forEach { line ->
+                oldLineStarts += oldCursor
+                oldCursor += line.length + 1
+            }
+            val newLineStarts = mutableListOf<Int>()
+            var newCursor = firstLineStart
+            newLines.forEach { line ->
+                newLineStarts += newCursor
+                newCursor += line.length + 1
+            }
+
+            fun mapOffset(offset: Int, lineIndex: Int): Int {
+                val oldLineStart = oldLineStarts[lineIndex]
+                val newLineStart = newLineStarts[lineIndex]
+                val oldPrefix = prefixLength(oldLines[lineIndex])
+                val newPrefix = prefixLength(newLines[lineIndex])
+                val offsetInLine = (offset - oldLineStart).coerceAtLeast(0)
+                val contentOffset = (offsetInLine - oldPrefix).coerceAtLeast(0)
+                return (newLineStart + newPrefix + contentOffset)
+                    .coerceIn(newLineStart, newLineStart + newLines[lineIndex].length)
+            }
+
+            val selectionStart = mapOffset(start, 0)
+            val selectionEnd = if (end == lastLineEnd) {
+                firstLineStart + newRegion.length
+            } else {
+                mapOffset(end, oldLines.lastIndex)
+            }
+            MarkdownSelection(
+                selectionStart,
+                maxOf(selectionStart, selectionEnd),
+            )
         }
         return MarkdownEditResult(result, newSelection)
     }

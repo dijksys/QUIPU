@@ -8,8 +8,15 @@ package io.github.dijksys.quipu.domain.formatting
 data class MarkdownVisualPlan(
     val text: String,
     val styles: List<MarkdownVisualRange>,
+    val links: List<MarkdownVisualLink>,
     val originalToTransformed: IntArray,
     val transformedToOriginal: IntArray,
+)
+
+data class MarkdownVisualLink(
+    val start: Int,
+    val end: Int,
+    val url: String,
 )
 
 data class MarkdownVisualRange(
@@ -50,10 +57,16 @@ object MarkdownVisualPlanner {
         val style: MarkdownVisualStyle,
     )
 
+    private data class SourceLink(
+        val range: IntRange,
+        val url: String,
+    )
+
     fun plan(source: String): MarkdownVisualPlan {
         val hidden = BooleanArray(source.length)
         val replacements = arrayOfNulls<Replacement>(source.length)
         val styles = mutableListOf<SourceStyle>()
+        val sourceLinks = mutableListOf<SourceLink>()
 
         fun hide(range: IntRange) {
             for (index in range) {
@@ -68,6 +81,10 @@ object MarkdownVisualPlanner {
 
         fun style(range: IntRange, value: MarkdownVisualStyle) {
             if (range.first <= range.last) styles += SourceStyle(range, value)
+        }
+
+        fun link(range: IntRange, url: String) {
+            if (range.first <= range.last) sourceLinks += SourceLink(range, url)
         }
 
         var lineStart = 0
@@ -97,7 +114,7 @@ object MarkdownVisualPlanner {
                         else -> MarkdownVisualStyle.HEADING_3
                     },
                 )
-                scanInline(source, contentStart, lineEnd, ::hide, ::style)
+                scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
                 lineStart = lineEnd + 1
                 continue
             }
@@ -120,7 +137,7 @@ object MarkdownVisualPlanner {
                 )
 
                 val contentStart = lineStart + match.groups[3]!!.range.first
-                scanInline(source, contentStart, lineEnd, ::hide, ::style)
+                scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
                 lineStart = lineEnd + 1
                 continue
             }
@@ -130,7 +147,7 @@ object MarkdownVisualPlanner {
                     match.groupValues[1].indexOfFirst { it == '-' || it == '*' || it == '+' }
                 replace(marker..marker, "•", MarkdownVisualStyle.LIST_MARKER)
                 val contentStart = lineStart + match.groups[2]!!.range.first
-                scanInline(source, contentStart, lineEnd, ::hide, ::style)
+                scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
                 lineStart = lineEnd + 1
                 continue
             }
@@ -141,12 +158,12 @@ object MarkdownVisualPlanner {
                     prefix.indexOfFirst { it == '.' }
                 style(lineStart until markerEnd + 1, MarkdownVisualStyle.LIST_MARKER)
                 val contentStart = lineStart + match.groups[2]!!.range.first
-                scanInline(source, contentStart, lineEnd, ::hide, ::style)
+                scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
                 lineStart = lineEnd + 1
                 continue
             }
 
-            scanInline(source, lineStart, lineEnd, ::hide, ::style)
+            scanInline(source, lineStart, lineEnd, ::hide, ::style, ::link)
             lineStart = lineEnd + 1
         }
 
@@ -198,9 +215,16 @@ object MarkdownVisualPlanner {
             }
         }
 
+        val outputLinks = sourceLinks.mapNotNull { link ->
+            val start = originalToTransformed[link.range.first]
+            val end = originalToTransformed[link.range.last + 1]
+            if (end > start) MarkdownVisualLink(start, end, link.url) else null
+        }.distinctBy { it.start to it.end }.sortedBy { it.start }
+
         return MarkdownVisualPlan(
             text = output.toString(),
             styles = outputStyles.sortedBy { it.start },
+            links = outputLinks,
             originalToTransformed = originalToTransformed,
             transformedToOriginal = transformedToOriginal.copyOf(output.length + 1),
         )
@@ -224,6 +248,7 @@ object MarkdownVisualPlanner {
         to: Int,
         hide: (IntRange) -> Unit,
         style: (IntRange, MarkdownVisualStyle) -> Unit,
+        link: (IntRange, String) -> Unit,
     ) {
         var index = from
         while (index < to) {
@@ -234,7 +259,7 @@ object MarkdownVisualPlanner {
                         hide(index until index + 2)
                         hide(close until close + 2)
                         style(index + 2 until close, MarkdownVisualStyle.BOLD)
-                        scanInline(source, index + 2, close, hide, style)
+                        scanInline(source, index + 2, close, hide, style, link)
                         index = close + 2
                     } else {
                         index += 2
@@ -247,7 +272,7 @@ object MarkdownVisualPlanner {
                         hide(index..index)
                         hide(close..close)
                         style(index + 1 until close, MarkdownVisualStyle.ITALIC)
-                        scanInline(source, index + 1, close, hide, style)
+                        scanInline(source, index + 1, close, hide, style, link)
                         index = close + 1
                     } else {
                         index++
@@ -266,18 +291,61 @@ object MarkdownVisualPlanner {
                     }
                 }
 
-                source[index] == '[' && (index == from || source[index - 1] != '!') -> {
-                    val labelEnd = source.indexOf("](", index + 1)
+                source[index] == '!' && index + 1 < to && source[index + 1] == '[' -> {
+                    val labelEnd = source.indexOf("](", index + 2)
                     val urlEnd = if (labelEnd >= 0) source.indexOf(')', labelEnd + 2) else -1
-                    val valid = labelEnd in (index + 1) until to &&
-                        urlEnd in (labelEnd + 2) until to &&
-                        MarkdownParser.isValidHttpUrl(source.substring(labelEnd + 2, urlEnd))
-                    if (valid) {
-                        hide(index..index)
-                        hide(labelEnd until urlEnd + 1)
-                        style(index + 1 until labelEnd, MarkdownVisualStyle.LINK)
-                        scanInline(source, index + 1, labelEnd, hide, style)
+                    if (labelEnd > index + 2 && urlEnd > labelEnd + 2) {
                         index = urlEnd + 1
+                    } else {
+                        index++
+                    }
+                }
+
+                source[index] == '[' && (index == from || source[index - 1] != '!') -> {
+                    val markdownLink = AutoLinkDetector.markdownLinkAt(source, index, to)
+                    if (markdownLink != null) {
+                        hide(index until markdownLink.visibleStart)
+                        hide(markdownLink.visibleEnd until markdownLink.end)
+                        style(
+                            markdownLink.visibleStart until markdownLink.visibleEnd,
+                            MarkdownVisualStyle.LINK,
+                        )
+                        link(
+                            markdownLink.visibleStart until markdownLink.visibleEnd,
+                            markdownLink.normalizedUrl,
+                        )
+                        scanInline(
+                            source,
+                            markdownLink.visibleStart,
+                            markdownLink.visibleEnd,
+                            hide,
+                            style,
+                            link,
+                        )
+                        index = markdownLink.end
+                    } else {
+                        val labelEnd = source.indexOf("](", index + 1)
+                        val urlEnd = if (labelEnd >= 0) source.indexOf(')', labelEnd + 2) else -1
+                        index = if (labelEnd > index + 1 && urlEnd > labelEnd + 2) {
+                            urlEnd + 1
+                        } else {
+                            index + 1
+                        }
+                    }
+                }
+
+                AutoLinkDetector.isPotentialStart(source, index) -> {
+                    val autoLink = AutoLinkDetector.findAt(source, index, to)
+                    if (autoLink != null && autoLink.end <= to) {
+                        style(
+                            autoLink.visibleStart until autoLink.visibleEnd,
+                            MarkdownVisualStyle.LINK,
+                        )
+                        link(
+                            autoLink.visibleStart until autoLink.visibleEnd,
+                            autoLink.normalizedUrl,
+                        )
+                        index = autoLink.end
                     } else {
                         index++
                     }

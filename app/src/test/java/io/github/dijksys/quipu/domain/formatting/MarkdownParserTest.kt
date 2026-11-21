@@ -106,6 +106,49 @@ class MarkdownParserTest {
     }
 
     @Test
+    fun `parses bare and explicit autolinks`() {
+        val inlines = MarkdownParser.parseInline(
+            "Visita platform.deepseek.com y https://example.com/path.",
+        )
+        val links = inlines.filterIsInstance<MarkdownInline.Link>()
+        assertEquals(2, links.size)
+        assertEquals("platform.deepseek.com", links[0].text)
+        assertEquals("https://platform.deepseek.com", links[0].url)
+        assertEquals("https://example.com/path", links[1].text)
+        assertEquals("https://example.com/path", links[1].url)
+    }
+
+    @Test
+    fun `parses markdown links whose label is a url`() {
+        val links = MarkdownParser.parseInline(
+            "[https://platform.deepseek.com/usage](https://platform.deepseek.com/usage)",
+        ).filterIsInstance<MarkdownInline.Link>()
+
+        assertEquals(1, links.size)
+        assertEquals("https://platform.deepseek.com/usage", links.single().text)
+        assertEquals("https://platform.deepseek.com/usage", links.single().url)
+    }
+
+    @Test
+    fun `emails and dotted words remain text`() {
+        assertEquals(
+            listOf(MarkdownInline.Text("usuario@example.com")),
+            MarkdownParser.parseInline("usuario@example.com"),
+        )
+        assertEquals(
+            listOf(MarkdownInline.Text("palabra...otra")),
+            MarkdownParser.parseInline("palabra...otra"),
+        )
+    }
+
+    @Test
+    fun `autolinks inside code remain code`() {
+        val inlines = MarkdownParser.parseInline("`https://example.com`")
+        assertEquals(1, inlines.size)
+        assertTrue(inlines.single() is MarkdownInline.Code)
+    }
+
+    @Test
     fun `unclosed code fence remains visible as text`() {
         val blocks = MarkdownParser.parse("```kotlin\nfun main()")
         assertEquals(2, blocks.size)

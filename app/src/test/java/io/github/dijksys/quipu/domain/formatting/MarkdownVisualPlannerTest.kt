@@ -86,6 +86,68 @@ class MarkdownVisualPlannerTest {
     }
 
     @Test
+    fun `autolinks are styled and exposed with punctuation excluded`() {
+        val source = "Consulta platform.deepseek.com."
+        val plan = MarkdownVisualPlanner.plan(source)
+        val link = plan.links.single()
+
+        assertEquals(source, plan.text)
+        assertEquals("https://platform.deepseek.com", link.url)
+        assertEquals(source.indexOf("platform"), link.start)
+        assertEquals(source.length - 1, link.end)
+        assertTrue(
+            plan.styles.any {
+                it.style == MarkdownVisualStyle.LINK &&
+                    it.start == link.start &&
+                    it.end == link.end
+            },
+        )
+    }
+
+    @Test
+    fun `explicit urls and multiple links are detected without changing text`() {
+        val source = "Uno https://one.com y dos example.org"
+        val plan = MarkdownVisualPlanner.plan(source)
+
+        assertEquals(source, plan.text)
+        assertEquals(2, plan.links.size)
+        assertEquals("https://one.com", plan.links[0].url)
+        assertEquals("https://example.org", plan.links[1].url)
+    }
+
+    @Test
+    fun `markdown links with url labels keep one visual link`() {
+        val source = "[https://platform.deepseek.com/usage](https://platform.deepseek.com/usage)"
+        val plan = MarkdownVisualPlanner.plan(source)
+
+        assertEquals("https://platform.deepseek.com/usage", plan.text)
+        val link = plan.links.single()
+        assertEquals(0, link.start)
+        assertEquals(plan.text.length, link.end)
+        assertEquals("https://platform.deepseek.com/usage", link.url)
+    }
+
+    @Test
+    fun `urls inside code are not autolinks`() {
+        val inline = MarkdownVisualPlanner.plan("Usa `https://example.com` aquí")
+        assertTrue(inline.links.isEmpty())
+        assertTrue(inline.styles.none { it.style == MarkdownVisualStyle.LINK })
+
+        val block = MarkdownVisualPlanner.plan(
+            "```\nhttps://example.com\nexample.org\n```",
+        )
+        assertTrue(block.links.isEmpty())
+        assertTrue(block.text.contains("https://example.com"))
+    }
+
+    @Test
+    fun `text with dots and emails is not linked`() {
+        assertTrue(MarkdownVisualPlanner.plan("palabra...otra").links.isEmpty())
+        assertTrue(MarkdownVisualPlanner.plan("usuario@example.com").links.isEmpty())
+        assertTrue(MarkdownVisualPlanner.plan("version.1.2.3").links.isEmpty())
+    }
+
+    @Test
     fun `offset mapping is always inside bounds and monotonic`() {
         val plan = MarkdownVisualPlanner.plan(
             "# Título\n\n**Negrita** y [enlace](https://example.com)\n- [x] Hecho",
@@ -98,6 +160,10 @@ class MarkdownVisualPlannerTest {
         for (offset in 0..plan.text.length) {
             val original = plan.transformedToOriginal[offset]
             assertTrue(original in 0..plan.originalToTransformed.lastIndex)
+        }
+        plan.links.forEach { link ->
+            assertTrue(link.start in 0 until plan.text.length)
+            assertTrue(link.end in (link.start + 1)..plan.text.length)
         }
         assertFalse(plan.text.contains("https://example.com"))
     }

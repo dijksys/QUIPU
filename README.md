@@ -7,8 +7,8 @@ y una interfaz minimalista en español.
 La Fase 1 está implementada: CRUD de notas con guardado automático, papelera,
 archivado, búsqueda FTS con etiquetas, recordatorios con alarmas locales,
 notificaciones, reprogramación tras reinicios, ajustes de tema y pruebas
-unitarias e instrumentadas. El editor admite Markdown con formato visual en
-tiempo real, barra acoplada al teclado y vista previa.
+unitarias e instrumentadas. El editor aplica formato Markdown en tiempo real,
+detecta URLs automáticamente y acopla su barra al teclado.
 
 En una instalación nueva, QUIPU muestra una pantalla de bienvenida y no vuelve
 a mostrarla después de pulsar Comenzar. Las instalaciones actualizadas desde
@@ -147,6 +147,7 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [docs/FEATURES.md](docs/FEATURES.md)
 - [docs/FEATURES/ADVANCED_SEARCH.md](docs/FEATURES/ADVANCED_SEARCH.md)
 - [docs/FEATURES/MARKDOWN_EDITOR.md](docs/FEATURES/MARKDOWN_EDITOR.md)
+- [docs/DEVELOPMENT/GITHUB_ACTIONS.md](docs/DEVELOPMENT/GITHUB_ACTIONS.md)
 - [docs/BRANDING.md](docs/BRANDING.md)
 - [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md)
 - [docs/releases/v1.1.7.md](docs/releases/v1.1.7.md)

@@ -18,16 +18,35 @@ Todas las fechas están en formato ISO 8601.
 
 - Editor de notas con sintaxis Markdown: negritas, cursivas, encabezados,
   listas, casillas, enlaces y bloques de código.
+- Una sola superficie de edición con formato visual en tiempo real y sin
+  selector Editar/Vista previa.
 - Barra de herramientas acoplada sobre el teclado, visible solo con el contenido
-  enfocado y en modo edición.
-- Formato visual en tiempo real que oculta delimitadores sin alterar el Markdown
-  persistido.
-- Vista previa Markdown con casillas interactivas y enlaces externos seguros.
+  enfocado.
+- Detección automática de URLs con y sin esquema, validación de dominios,
+  resaltado visual y apertura en el navegador externo.
+- Los encabezados ya no reinician Gboard: el menú no roba el foco y solo se
+  recupera el foco si se perdió.
 - Extractos de notas sin sintaxis Markdown en Inicio y en el listado.
+
+### Corregido
+
+- La selección se conserva al aplicar encabezados y listas sobre texto
+  seleccionado.
+- Los enlaces Markdown inválidos y las imágenes se mantienen literales.
+- Los autolinks no se detectan dentro de código inline ni bloques de código.
+- El esquema de una URL se normaliza a minúsculas para que Android pueda abrir
+  el navegador incluso si el usuario escribió `HTTPS://`.
+
+### Infraestructura
+
+- Workflows de GitHub Actions para pruebas unitarias, lint, build Debug y
+  pruebas instrumentadas en emulador API 35.
+- Acciones fijadas por SHA, permisos de solo lectura, caché de Gradle y
+  Dependabot semanal para Gradle y GitHub Actions.
 
 ### Verificación
 
-- 147 pruebas unitarias y 56 instrumentadas aprobadas en el Motorola Moto G34
+- 174 pruebas unitarias y 62 instrumentadas aprobadas en el Motorola Moto G34
   5G (Android 15, API 35).
 - `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
   `:app:assembleDebug` y la suite instrumentada completa.

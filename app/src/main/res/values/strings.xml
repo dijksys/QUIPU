@@ -104,8 +104,6 @@
     <string name="note_editor_content_placeholder">Empieza a escribir…</string>
     <string name="note_editor_created">Creada el %1$s</string>
     <string name="note_editor_updated">Última actualización: %1$s</string>
-    <string name="note_markdown_edit">Editar</string>
-    <string name="note_markdown_preview">Vista previa</string>
     <string name="note_markdown_bold">Negrita</string>
     <string name="note_markdown_italic">Cursiva</string>
     <string name="note_markdown_heading">Encabezado</string>
@@ -115,13 +113,7 @@
     <string name="note_markdown_unordered">Lista con viñetas</string>
     <string name="note_markdown_ordered">Lista numerada</string>
     <string name="note_markdown_checklist">Casilla de verificación</string>
-    <string name="note_markdown_link">Insertar enlace</string>
     <string name="note_markdown_code">Bloque de código</string>
-    <string name="note_markdown_link_title">Insertar enlace</string>
-    <string name="note_markdown_link_label">Texto visible</string>
-    <string name="note_markdown_link_url">URL</string>
-    <string name="note_markdown_link_invalid">Introduce una URL HTTP o HTTPS válida.</string>
-    <string name="note_markdown_link_insert">Insertar</string>
     <string name="note_markdown_preview_empty">No hay contenido para previsualizar.</string>
     <string name="note_markdown_link_error">No se pudo abrir el enlace.</string>
     <string name="note_markdown_checkbox">Marcar elemento</string>

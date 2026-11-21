@@ -1,11 +1,7 @@
 package io.github.dijksys.quipu.feature.notes
 
 import android.content.Context
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -15,6 +11,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.dijksys.quipu.R
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,11 +39,11 @@ class NoteMarkdownComponentsTest {
             "markdown_unordered",
             "markdown_ordered",
             "markdown_checklist",
-            "markdown_link",
             "markdown_code",
         ).forEach { tag ->
             composeRule.onNodeWithTag(tag).assertIsDisplayed()
         }
+        composeRule.onNodeWithTag("markdown_link").assertDoesNotExist()
     }
 
     @Test
@@ -67,7 +64,6 @@ class NoteMarkdownComponentsTest {
         composeRule.onNodeWithTag("markdown_unordered").performClick()
         composeRule.onNodeWithTag("markdown_ordered").performClick()
         composeRule.onNodeWithTag("markdown_checklist").performClick()
-        composeRule.onNodeWithTag("markdown_link").performClick()
         composeRule.onNodeWithTag("markdown_code").performClick()
 
         composeRule.onNodeWithTag("markdown_heading").performClick()
@@ -81,30 +77,11 @@ class NoteMarkdownComponentsTest {
                 MarkdownToolbarAction.UNORDERED_LIST,
                 MarkdownToolbarAction.ORDERED_LIST,
                 MarkdownToolbarAction.CHECKLIST,
-                MarkdownToolbarAction.LINK,
                 MarkdownToolbarAction.CODE_BLOCK,
             ),
             actions,
         )
         assertEquals(listOf(2), headings)
-    }
-
-    @Test
-    fun modeToggleSelectsPreview() {
-        var isPreview by mutableStateOf(false)
-        composeRule.setContent {
-            QuipuTheme {
-                NoteEditorModeToggle(
-                    isPreview = isPreview,
-                    onEdit = { isPreview = false },
-                    onPreview = { isPreview = true },
-                )
-            }
-        }
-
-        composeRule.onNodeWithTag("note_mode_edit").assertIsSelected()
-        composeRule.onNodeWithTag("note_mode_preview").performClick()
-        composeRule.onNodeWithTag("note_mode_preview").assertIsSelected()
     }
 
     @Test
@@ -173,6 +150,40 @@ class NoteMarkdownComponentsTest {
 
         composeRule.onNodeWithText("QUIPU").performClick()
         assertEquals("https://github.com/dijksys/QUIPU", openedUrl)
+    }
+
+    @Test
+    fun previewAutolinkOpensTheDetectedDestination() {
+        var openedUrl: String? = null
+        composeRule.setContent {
+            QuipuTheme {
+                NoteMarkdownPreview(
+                    markdown = "https://example.com/path",
+                    onToggleChecklist = {},
+                    onOpenLink = { openedUrl = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("https://example.com/path").performClick()
+        assertEquals("https://example.com/path", openedUrl)
+    }
+
+    @Test
+    fun previewEmailIsNotAnAutolink() {
+        var openedUrl: String? = null
+        composeRule.setContent {
+            QuipuTheme {
+                NoteMarkdownPreview(
+                    markdown = "usuario@example.com",
+                    onToggleChecklist = {},
+                    onOpenLink = { openedUrl = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("usuario@example.com").performClick()
+        assertNull(openedUrl)
     }
 
     @Test

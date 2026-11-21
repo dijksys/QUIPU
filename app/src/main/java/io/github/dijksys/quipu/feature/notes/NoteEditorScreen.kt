@@ -1,6 +1,8 @@
 package io.github.dijksys.quipu.feature.notes
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +19,9 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.rounded.Archive
@@ -51,7 +55,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,11 +63,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
@@ -78,10 +84,11 @@ import io.github.dijksys.quipu.core.designsystem.components.QuipuEmptyState
 import io.github.dijksys.quipu.core.designsystem.components.QuipuFilterChip
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
-import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
 import io.github.dijksys.quipu.domain.formatting.MarkdownEditResult
 import io.github.dijksys.quipu.domain.formatting.MarkdownFormatting
 import io.github.dijksys.quipu.domain.formatting.MarkdownSelection
+import io.github.dijksys.quipu.domain.formatting.MarkdownVisualPlan
+import io.github.dijksys.quipu.domain.formatting.MarkdownVisualPlanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -97,49 +104,59 @@ fun NoteEditorScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val focusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
-    val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
     val uriHandler = LocalUriHandler.current
     var editorValue by remember(state.noteId) {
         mutableStateOf(TextFieldValue(state.content))
     }
-    var isPreview by rememberSaveable(state.noteId) { mutableStateOf(false) }
     var contentFocused by remember { mutableStateOf(false) }
-    var showLinkDialog by remember { mutableStateOf(false) }
-    var linkLabel by remember { mutableStateOf("") }
-    var linkUrl by remember { mutableStateOf("") }
-    var linkSelection by remember { mutableStateOf(MarkdownSelection(0, 0)) }
+    var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
     var showTagDialog by remember { mutableStateOf(false) }
     var tagInput by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
 
     val imeVisible = WindowInsets.isImeVisible
-    val showToolbar = !isPreview && contentFocused && imeVisible
+    val showToolbar = contentFocused && imeVisible
 
     val linkColor = MaterialTheme.colorScheme.primary
     val inlineCodeBackground = MaterialTheme.colorScheme.surfaceVariant
     val codeBlockBackground = MaterialTheme.colorScheme.surfaceContainerHigh
     val markerColor = MaterialTheme.colorScheme.primary
+    val visualPlan = remember(editorValue.text) {
+        MarkdownVisualPlanner.plan(editorValue.text)
+    }
     val visualTransformation = remember(
+        visualPlan,
         linkColor,
         inlineCodeBackground,
         codeBlockBackground,
         markerColor,
     ) {
         MarkdownVisualTransformation(
+            plan = visualPlan,
             linkColor = linkColor,
             inlineCodeBackground = inlineCodeBackground,
             codeBlockBackground = codeBlockBackground,
             markerColor = markerColor,
         )
     }
+    val contentScroll = rememberScrollState()
+    val latestLayout by rememberUpdatedState(textLayout)
+    val latestPlan by rememberUpdatedState(visualPlan)
 
     val messagePinned = stringResource(R.string.note_pinned)
     val messageUnpinned = stringResource(R.string.note_unpinned)
     val messageError = stringResource(R.string.error_generic)
     val messageWriteBeforeReminder = stringResource(R.string.note_write_before_reminder)
     val messageLinkError = stringResource(R.string.note_markdown_link_error)
+
+    val openLink: (String) -> Unit = { url ->
+        runCatching { uriHandler.openUri(url) }
+            .onFailure {
+                scope.launch { snackbarHostState.showSnackbar(messageLinkError) }
+            }
+    }
+    val latestOpenLink by rememberUpdatedState(openLink)
 
     LaunchedEffect(state.content, state.isLoading) {
         if (!state.isLoading && editorValue.text != state.content) {
@@ -149,6 +166,27 @@ fun NoteEditorScreen(
                 text = state.content,
                 selection = TextRange(start, end),
             )
+        }
+    }
+
+    LaunchedEffect(editorValue.selection, editorValue.text, textLayout, contentFocused) {
+        val layout = textLayout ?: return@LaunchedEffect
+        if (!contentFocused) return@LaunchedEffect
+        val originalOffset = editorValue.selection.end.coerceIn(0, editorValue.text.length)
+        val transformedOffset = latestPlan.originalToTransformed[
+            originalOffset.coerceIn(0, latestPlan.originalToTransformed.lastIndex)
+        ]
+        val line = layout.getLineForOffset(transformedOffset)
+        val top = layout.getLineTop(line).toInt()
+        val bottom = layout.getLineBottom(line).toInt()
+        val viewport = contentScroll.viewportSize
+        if (viewport <= 0) return@LaunchedEffect
+        when {
+            top < contentScroll.value -> contentScroll.animateScrollTo(top)
+            bottom > contentScroll.value + viewport ->
+                contentScroll.animateScrollTo(bottom - viewport + 24)
+
+            else -> Unit
         }
     }
 
@@ -166,21 +204,10 @@ fun NoteEditorScreen(
         if (result.text != state.content) {
             viewModel.onContentChange(result.text)
         }
-        if (!isPreview) {
+        // No reiniciar Gboard: solo recuperar foco si se perdió realmente.
+        if (!contentFocused) {
             contentFocusRequester.requestFocus()
         }
-    }
-
-    val openLinkDialog: () -> Unit = {
-        val selection = currentSelection()
-        linkSelection = selection
-        linkLabel = if (selection.start != selection.end) {
-            editorValue.text.substring(selection.start, selection.end)
-        } else {
-            ""
-        }
-        linkUrl = ""
-        showLinkDialog = true
     }
 
     val applyToolbarAction: (MarkdownToolbarAction) -> Unit = { action ->
@@ -208,8 +235,6 @@ fun NoteEditorScreen(
             MarkdownToolbarAction.CODE_BLOCK -> applyContent(
                 MarkdownFormatting.insertCodeBlock(editorValue.text, currentSelection()),
             )
-
-            MarkdownToolbarAction.LINK -> openLinkDialog()
         }
     }
 
@@ -412,55 +437,13 @@ fun NoteEditorScreen(
                     )
                 }
 
-                if (!imeVisible) {
-                    Spacer(Modifier.height(QuipuSpacing.xs))
-                    NoteEditorModeToggle(
-                        isPreview = isPreview,
-                        onEdit = {
-                            if (isPreview) {
-                                isPreview = false
-                                contentFocusRequester.requestFocus()
-                            }
-                        },
-                        onPreview = {
-                            if (!isPreview) {
-                                isPreview = true
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                            }
-                        },
-                    )
-                }
-
-                Spacer(Modifier.height(QuipuSpacing.xs))
-                if (isPreview) {
-                    NoteMarkdownPreview(
-                        markdown = state.content,
-                        onToggleChecklist = { lineIndex ->
-                            val updated = MarkdownChecklist.toggleItem(state.content, lineIndex)
-                            if (updated != state.content) {
-                                val caret = editorValue.selection.start.coerceIn(0, updated.length)
-                                editorValue = TextFieldValue(
-                                    text = updated,
-                                    selection = TextRange(caret, caret),
-                                )
-                                viewModel.onContentChange(updated)
-                            }
-                        },
-                        onOpenLink = { url ->
-                            runCatching { uriHandler.openUri(url) }
-                                .onFailure {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(messageLinkError)
-                                    }
-                                }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                    )
-                } else {
-                    TextField(
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(contentScroll),
+                ) {
+                    MarkdownEditorField(
                         value = editorValue,
                         onValueChange = { value ->
                             editorValue = value
@@ -468,26 +451,18 @@ fun NoteEditorScreen(
                                 viewModel.onContentChange(value.text)
                             }
                         },
+                        visualTransformation = visualTransformation,
+                        plan = visualPlan,
+                        textLayout = latestLayout,
+                        onTextLayout = { textLayout = it },
+                        onOpenLink = { latestOpenLink(it) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
                             .focusRequester(contentFocusRequester)
                             .onFocusChanged { contentFocused = it.isFocused }
                             .testTag("note_content"),
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.note_editor_content_placeholder),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            )
-                        },
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        visualTransformation = visualTransformation,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                        ),
-                        colors = transparentTextFieldColors(),
                     )
+                    Spacer(Modifier.height(QuipuSpacing.xxl))
                 }
 
                 if (!imeVisible) {
@@ -550,63 +525,85 @@ fun NoteEditorScreen(
             },
         )
     }
+}
 
-    if (showLinkDialog) {
-        val linkIsValid = MarkdownFormatting.isValidHttpUrl(linkUrl)
-        AlertDialog(
-            onDismissRequest = { showLinkDialog = false },
-            title = { Text(stringResource(R.string.note_markdown_link_title)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = linkLabel,
-                        onValueChange = { linkLabel = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.note_markdown_link_label)) },
-                        singleLine = true,
+@Composable
+fun MarkdownEditorField(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    visualTransformation: MarkdownVisualTransformation,
+    plan: MarkdownVisualPlan,
+    textLayout: TextLayoutResult?,
+    onTextLayout: (TextLayoutResult) -> Unit,
+    onOpenLink: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val latestLayout by rememberUpdatedState(textLayout)
+    val latestPlan by rememberUpdatedState(plan)
+    val latestOpenLink by rememberUpdatedState(onOpenLink)
+    val cursorColor = MaterialTheme.colorScheme.primary
+    val bodyStyle = MaterialTheme.typography.bodyLarge.copy(
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .pointerInput(plan) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var up: PointerInputChange? = null
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            up = change
+                            break
+                        }
+                    }
+                    if (up == null) return@awaitEachGesture
+                    val duration = up.uptimeMillis - down.uptimeMillis
+                    val distance = (up.position - down.position).getDistance()
+                    if (duration > viewConfiguration.longPressTimeoutMillis ||
+                        distance > viewConfiguration.touchSlop
+                    ) {
+                        return@awaitEachGesture
+                    }
+
+                    val layout = latestLayout ?: return@awaitEachGesture
+                    val offset = layout.getOffsetForPosition(up.position)
+                    val link = latestPlan.links.firstOrNull { offset in it.start until it.end }
+                    if (link != null) {
+                        val line = layout.getLineForOffset(offset)
+                        val lineTop = layout.getLineTop(line)
+                        val lineBottom = layout.getLineBottom(line)
+                        if (up.position.y in lineTop..lineBottom) {
+                            latestOpenLink(link.url)
+                        }
+                    }
+                }
+            },
+        textStyle = bodyStyle,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+        ),
+        visualTransformation = visualTransformation,
+        onTextLayout = onTextLayout,
+        cursorBrush = SolidColor(cursorColor),
+        decorationBox = { innerTextField ->
+            Box {
+                if (value.text.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.note_editor_content_placeholder),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     )
-                    Spacer(Modifier.height(QuipuSpacing.sm))
-                    OutlinedTextField(
-                        value = linkUrl,
-                        onValueChange = { linkUrl = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.note_markdown_link_url)) },
-                        singleLine = true,
-                        isError = linkUrl.isNotBlank() && !linkIsValid,
-                        supportingText = if (linkUrl.isNotBlank() && !linkIsValid) {
-                            {
-                                Text(stringResource(R.string.note_markdown_link_invalid))
-                            }
-                        } else {
-                            null
-                        },
-                    )
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = linkIsValid,
-                    onClick = {
-                        val result = MarkdownFormatting.insertLink(
-                            editorValue.text,
-                            linkSelection,
-                            linkLabel,
-                            linkUrl,
-                        )
-                        showLinkDialog = false
-                        applyContent(result)
-                    },
-                ) {
-                    Text(stringResource(R.string.note_markdown_link_insert))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLinkDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            },
-        )
-    }
+                innerTextField()
+            }
+        },
+    )
 }
 
 @Composable
