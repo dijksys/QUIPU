@@ -43,14 +43,14 @@ jobs:
           cache-provider: basic
 
       - name: Set up Android SDK
-        # android-actions/setup-android v3.2.2
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        # android-actions/setup-android v4.0.4
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
         with:
           packages: platform-tools
 
       - name: Install Android SDK 37
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -perm -u+x -not -path "*/latest/*" | sort -V | tail -n 1)
           "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Run unit tests
@@ -58,8 +58,8 @@ jobs:
 
       - name: Upload unit test results
         if: always()
-        # actions/upload-artifact v4.6.2
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: unit-test-results
           path: app/build/test-results/testDebugUnitTest/**
@@ -93,14 +93,14 @@ jobs:
           cache-provider: basic
 
       - name: Set up Android SDK
-        # android-actions/setup-android v3.2.2
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        # android-actions/setup-android v4.0.4
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
         with:
           packages: platform-tools
 
       - name: Install Android SDK 37
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -perm -u+x -not -path "*/latest/*" | sort -V | tail -n 1)
           "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Run lint
@@ -108,8 +108,8 @@ jobs:
 
       - name: Upload lint report
         if: always()
-        # actions/upload-artifact v4.6.2
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: lint-report
           path: |
@@ -146,14 +146,14 @@ jobs:
           cache-provider: basic
 
       - name: Set up Android SDK
-        # android-actions/setup-android v3.2.2
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        # android-actions/setup-android v4.0.4
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
         with:
           packages: platform-tools
 
       - name: Install Android SDK 37
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -perm -u+x -not -path "*/latest/*" | sort -V | tail -n 1)
           "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Compile and assemble Debug
@@ -161,8 +161,8 @@ jobs:
 
       - name: Upload Debug APK
         if: always()
-        # actions/upload-artifact v4.6.2
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
