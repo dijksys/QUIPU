@@ -14,6 +14,7 @@ data class NotesUiState(
     val dateFilter: NoteDateFilter = NoteDateFilter.ALL,
     val customDateRange: NoteDateRange? = null,
     val sortOrder: NoteSortOrder = NoteSortOrder.RELEVANCE,
+    val isEmptyingTrash: Boolean = false,
 ) {
     val isActive: Boolean get() = filter == NoteFilter.ACTIVE
     val isArchived: Boolean get() = filter == NoteFilter.ARCHIVED

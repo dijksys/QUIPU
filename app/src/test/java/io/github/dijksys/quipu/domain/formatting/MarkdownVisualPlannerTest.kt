@@ -148,6 +148,42 @@ class MarkdownVisualPlannerTest {
     }
 
     @Test
+    fun `checklists expose interactive ranges and original line indexes`() {
+        val plan = MarkdownVisualPlanner.plan("- [ ] Uno\n- [x] Dos\n  * [ ] Tres")
+
+        assertEquals(3, plan.checklists.size)
+        assertEquals(listOf(0, 1, 2), plan.checklists.map { it.lineIndex })
+        assertEquals(listOf(false, true, false), plan.checklists.map { it.checked })
+        plan.checklists.forEach { item ->
+            assertTrue(item.start in 0 until plan.text.length)
+            assertTrue(item.end in (item.start + 1)..plan.text.length)
+            assertTrue(plan.text.substring(item.start, item.end) in setOf("☐", "☑"))
+        }
+    }
+
+    @Test
+    fun `checklists support dash star and plus markers`() {
+        val plan = MarkdownVisualPlanner.plan("- [ ] Uno\n* [x] Dos\n+ [ ] Tres")
+
+        assertEquals(3, plan.checklists.size)
+        assertEquals(listOf(false, true, false), plan.checklists.map { it.checked })
+    }
+
+    @Test
+    fun `checklists inside code are not interactive`() {
+        val block = MarkdownVisualPlanner.plan("```\n- [ ] Uno\n```")
+        assertTrue(block.checklists.isEmpty())
+
+        val inline = MarkdownVisualPlanner.plan("`- [ ] Uno`")
+        assertTrue(inline.checklists.isEmpty())
+    }
+
+    @Test
+    fun `normal text has no interactive checklists`() {
+        assertTrue(MarkdownVisualPlanner.plan("Texto normal").checklists.isEmpty())
+    }
+
+    @Test
     fun `offset mapping is always inside bounds and monotonic`() {
         val plan = MarkdownVisualPlanner.plan(
             "# Título\n\n**Negrita** y [enlace](https://example.com)\n- [x] Hecho",

@@ -9,6 +9,7 @@ data class MarkdownVisualPlan(
     val text: String,
     val styles: List<MarkdownVisualRange>,
     val links: List<MarkdownVisualLink>,
+    val checklists: List<MarkdownVisualChecklist>,
     val originalToTransformed: IntArray,
     val transformedToOriginal: IntArray,
 )
@@ -17,6 +18,13 @@ data class MarkdownVisualLink(
     val start: Int,
     val end: Int,
     val url: String,
+)
+
+data class MarkdownVisualChecklist(
+    val start: Int,
+    val end: Int,
+    val lineIndex: Int,
+    val checked: Boolean,
 )
 
 data class MarkdownVisualRange(
@@ -62,11 +70,18 @@ object MarkdownVisualPlanner {
         val url: String,
     )
 
+    private data class SourceChecklist(
+        val range: IntRange,
+        val lineIndex: Int,
+        val checked: Boolean,
+    )
+
     fun plan(source: String): MarkdownVisualPlan {
         val hidden = BooleanArray(source.length)
         val replacements = arrayOfNulls<Replacement>(source.length)
         val styles = mutableListOf<SourceStyle>()
         val sourceLinks = mutableListOf<SourceLink>()
+        val sourceChecklists = mutableListOf<SourceChecklist>()
 
         fun hide(range: IntRange) {
             for (index in range) {
@@ -88,6 +103,7 @@ object MarkdownVisualPlanner {
         }
 
         var lineStart = 0
+        var lineIndex = 0
         while (lineStart <= source.length) {
             val lineBreak = source.indexOf('\n', lineStart)
             val lineEnd = if (lineBreak < 0) source.length else lineBreak
@@ -97,6 +113,7 @@ object MarkdownVisualPlanner {
                 val closing = findClosingFence(source, lineEnd)
                 if (closing != null) {
                     style(lineStart until closing, MarkdownVisualStyle.CODE_BLOCK)
+                    lineIndex += source.substring(lineStart, closing).count { it == '\n' } + 1
                     lineStart = closing + 1
                     continue
                 }
@@ -115,6 +132,7 @@ object MarkdownVisualPlanner {
                     },
                 )
                 scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
+                lineIndex++
                 lineStart = lineEnd + 1
                 continue
             }
@@ -126,8 +144,9 @@ object MarkdownVisualPlanner {
 
                 val checkboxStart = lineStart + match.groups[2]!!.range.first - 1
                 val checked = match.groupValues[2].equals("x", ignoreCase = true)
+                val checkboxRange = checkboxStart until checkboxStart + 3
                 replace(
-                    checkboxStart until checkboxStart + 3,
+                    checkboxRange,
                     if (checked) "☑" else "☐",
                     if (checked) {
                         MarkdownVisualStyle.CHECKLIST_DONE
@@ -135,9 +154,15 @@ object MarkdownVisualPlanner {
                         MarkdownVisualStyle.CHECKLIST_PENDING
                     },
                 )
+                sourceChecklists += SourceChecklist(
+                    range = checkboxRange,
+                    lineIndex = lineIndex,
+                    checked = checked,
+                )
 
                 val contentStart = lineStart + match.groups[3]!!.range.first
                 scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
+                lineIndex++
                 lineStart = lineEnd + 1
                 continue
             }
@@ -148,6 +173,7 @@ object MarkdownVisualPlanner {
                 replace(marker..marker, "•", MarkdownVisualStyle.LIST_MARKER)
                 val contentStart = lineStart + match.groups[2]!!.range.first
                 scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
+                lineIndex++
                 lineStart = lineEnd + 1
                 continue
             }
@@ -159,11 +185,13 @@ object MarkdownVisualPlanner {
                 style(lineStart until markerEnd + 1, MarkdownVisualStyle.LIST_MARKER)
                 val contentStart = lineStart + match.groups[2]!!.range.first
                 scanInline(source, contentStart, lineEnd, ::hide, ::style, ::link)
+                lineIndex++
                 lineStart = lineEnd + 1
                 continue
             }
 
             scanInline(source, lineStart, lineEnd, ::hide, ::style, ::link)
+            lineIndex++
             lineStart = lineEnd + 1
         }
 
@@ -221,10 +249,26 @@ object MarkdownVisualPlanner {
             if (end > start) MarkdownVisualLink(start, end, link.url) else null
         }.distinctBy { it.start to it.end }.sortedBy { it.start }
 
+        val outputChecklists = sourceChecklists.mapNotNull { checklist ->
+            val start = originalToTransformed[checklist.range.first]
+            val end = originalToTransformed[checklist.range.last + 1]
+            if (end > start) {
+                MarkdownVisualChecklist(
+                    start = start,
+                    end = end,
+                    lineIndex = checklist.lineIndex,
+                    checked = checklist.checked,
+                )
+            } else {
+                null
+            }
+        }.distinctBy { it.start to it.end }.sortedBy { it.start }
+
         return MarkdownVisualPlan(
             text = output.toString(),
             styles = outputStyles.sortedBy { it.start },
             links = outputLinks,
+            checklists = outputChecklists,
             originalToTransformed = originalToTransformed,
             transformedToOriginal = transformedToOriginal.copyOf(output.length + 1),
         )

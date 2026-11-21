@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +23,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuTheme
+import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
+import io.github.dijksys.quipu.domain.formatting.MarkdownVisualPlan
 import io.github.dijksys.quipu.domain.formatting.MarkdownVisualPlanner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -98,8 +102,94 @@ class MarkdownEditorFieldTest {
         composeRule.runOnIdle { assertNull(opened) }
     }
 
+    @Test
+    fun tappingFirstChecklistTogglesOnlyThatLine() {
+        var toggledLine = -1
+        var updatedText: String? = null
+        setEditor(
+            initialText = "- [ ] Uno\n- [ ] Dos",
+            onOpenLink = {},
+            onToggleChecklist = { line, text ->
+                toggledLine = line
+                updatedText = text
+            },
+        )
+
+        composeRule.onNodeWithTag("editor_test")
+            .performTouchInput { click(Offset(40f, 10f)) }
+
+        composeRule.runOnIdle {
+            assertEquals(0, toggledLine)
+            assertEquals("- [x] Uno\n- [ ] Dos", updatedText)
+        }
+    }
+
+    @Test
+    fun tappingSecondChecklistTogglesOnlyThatLine() {
+        var toggledLine = -1
+        var updatedText: String? = null
+        var textLayout: TextLayoutResult? = null
+        var visualPlan: MarkdownVisualPlan? = null
+        setEditor(
+            initialText = "- [ ] Uno\n- [ ] Dos",
+            onToggleChecklist = { line, text ->
+                toggledLine = line
+                updatedText = text
+            },
+            onLayout = { textLayout = it },
+            onPlan = { visualPlan = it },
+            onOpenLink = {},
+        )
+
+        var clickPoint: Offset? = null
+        composeRule.runOnIdle {
+            val item = visualPlan!!.checklists[1]
+            clickPoint = textLayout!!.getBoundingBox(item.start).center
+        }
+        composeRule.onNodeWithTag("editor_test")
+            .performTouchInput { click(clickPoint!!) }
+
+        composeRule.runOnIdle {
+            assertEquals(1, toggledLine)
+            assertEquals("- [ ] Uno\n- [x] Dos", updatedText)
+        }
+    }
+
+    @Test
+    fun tappingChecklistTextDoesNotToggle() {
+        var toggledLine = -1
+        setEditor(
+            initialText = "- [ ] Comprar componentes",
+            onOpenLink = {},
+            onToggleChecklist = { line, _ -> toggledLine = line },
+        )
+
+        composeRule.onNodeWithTag("editor_test")
+            .performTouchInput { click(Offset(180f, 10f)) }
+
+        composeRule.runOnIdle { assertEquals(-1, toggledLine) }
+    }
+
+    @Test
+    fun longPressChecklistDoesNotToggle() {
+        var toggledLine = -1
+        setEditor(
+            initialText = "- [ ] Comprar",
+            onOpenLink = {},
+            onToggleChecklist = { line, _ -> toggledLine = line },
+        )
+
+        composeRule.onNodeWithTag("editor_test")
+            .performTouchInput { longClick(Offset(40f, 10f)) }
+
+        composeRule.runOnIdle { assertEquals(-1, toggledLine) }
+    }
+
     private fun setEditor(
         initialText: String,
+        onToggleChecklist: ((Int, String) -> Unit)? = null,
+        onLayout: (TextLayoutResult) -> Unit = {},
+        onPlan: (MarkdownVisualPlan) -> Unit = {},
         onOpenLink: (String) -> Unit,
     ) {
         composeRule.setContent {
@@ -107,6 +197,7 @@ class MarkdownEditorFieldTest {
                 var value by remember { mutableStateOf(TextFieldValue(initialText)) }
                 var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
                 val plan = remember(value.text) { MarkdownVisualPlanner.plan(value.text) }
+                SideEffect { onPlan(plan) }
                 val scheme = MaterialTheme.colorScheme
                 val transformation = remember(
                     plan,
@@ -130,8 +221,18 @@ class MarkdownEditorFieldTest {
                         visualTransformation = transformation,
                         plan = plan,
                         textLayout = layout,
-                        onTextLayout = { layout = it },
+                        onTextLayout = {
+                            layout = it
+                            onLayout(it)
+                        },
                         onOpenLink = onOpenLink,
+                        onToggleChecklist = { lineIndex ->
+                            val updated = MarkdownChecklist.toggleItem(value.text, lineIndex)
+                            if (updated != value.text) {
+                                value = TextFieldValue(updated)
+                                onToggleChecklist?.invoke(lineIndex, updated)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("editor_test"),

@@ -84,6 +84,7 @@ import io.github.dijksys.quipu.core.designsystem.components.QuipuEmptyState
 import io.github.dijksys.quipu.core.designsystem.components.QuipuFilterChip
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
+import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
 import io.github.dijksys.quipu.domain.formatting.MarkdownEditResult
 import io.github.dijksys.quipu.domain.formatting.MarkdownFormatting
 import io.github.dijksys.quipu.domain.formatting.MarkdownSelection
@@ -456,6 +457,16 @@ fun NoteEditorScreen(
                         textLayout = latestLayout,
                         onTextLayout = { textLayout = it },
                         onOpenLink = { latestOpenLink(it) },
+                        onToggleChecklist = { lineIndex ->
+                            val updated = MarkdownChecklist.toggleItem(state.content, lineIndex)
+                            if (updated != state.content) {
+                                editorValue = TextFieldValue(
+                                    text = updated,
+                                    selection = editorValue.selection,
+                                )
+                                viewModel.onContentChange(updated)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(contentFocusRequester)
@@ -536,11 +547,13 @@ fun MarkdownEditorField(
     textLayout: TextLayoutResult?,
     onTextLayout: (TextLayoutResult) -> Unit,
     onOpenLink: (String) -> Unit,
+    onToggleChecklist: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val latestLayout by rememberUpdatedState(textLayout)
     val latestPlan by rememberUpdatedState(plan)
     val latestOpenLink by rememberUpdatedState(onOpenLink)
+    val latestToggleChecklist by rememberUpdatedState(onToggleChecklist)
     val cursorColor = MaterialTheme.colorScheme.primary
     val bodyStyle = MaterialTheme.typography.bodyLarge.copy(
         color = MaterialTheme.colorScheme.onSurface,
@@ -580,7 +593,24 @@ fun MarkdownEditorField(
                         val lineBottom = layout.getLineBottom(line)
                         if (up.position.y in lineTop..lineBottom) {
                             latestOpenLink(link.url)
+                            return@awaitEachGesture
                         }
+                    }
+
+                    val checklist = latestPlan.checklists.firstOrNull { item ->
+                        val box = runCatching {
+                            layout.getBoundingBox(item.start)
+                        }.getOrNull()
+                        if (box == null) {
+                            offset in item.start until item.end
+                        } else {
+                            val slop = 8.dp.toPx()
+                            up.position.x in (box.left - slop)..(box.right + slop) &&
+                                up.position.y in (box.top - slop)..(box.bottom + slop)
+                        }
+                    }
+                    if (checklist != null) {
+                        latestToggleChecklist(checklist.lineIndex)
                     }
                 }
             },

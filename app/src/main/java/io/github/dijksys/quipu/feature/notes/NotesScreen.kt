@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -177,7 +178,14 @@ fun NotesScreen(
                         }
 
                         NoteFilter.TRASH -> {
-                            if (state.notes.isNotEmpty()) {
+                            if (state.isEmptyingTrash) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .padding(end = QuipuSpacing.md)
+                                        .size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else if (state.notes.isNotEmpty()) {
                                 QuipuTextButton(
                                     text = stringResource(R.string.trash_empty_action),
                                     onClick = { showEmptyTrashDialog = true },
@@ -336,11 +344,14 @@ fun NotesScreen(
             message = stringResource(R.string.trash_empty_dialog_message),
             confirmLabel = stringResource(R.string.trash_empty_action),
             onConfirm = {
-                viewModel.emptyTrash()
-                showEmptyTrashDialog = false
+                if (!state.isEmptyingTrash) {
+                    showEmptyTrashDialog = false
+                    viewModel.emptyTrash()
+                }
             },
             onDismiss = { showEmptyTrashDialog = false },
             destructive = true,
+            confirmEnabled = !state.isEmptyingTrash,
         )
     }
 

@@ -43,7 +43,7 @@ class NotesViewModel @Inject constructor(
     private val deleteNote: DeleteNoteUseCase,
     private val restoreNote: RestoreNoteUseCase,
     private val permanentlyDeleteNote: PermanentlyDeleteNoteUseCase,
-    private val emptyTrash: EmptyTrashUseCase,
+    private val emptyTrashUseCase: EmptyTrashUseCase,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -58,6 +58,7 @@ class NotesViewModel @Inject constructor(
     private val dateFilter = MutableStateFlow(NoteDateFilter.ALL)
     private val customRange = MutableStateFlow<NoteDateRange?>(null)
     private val sortOrder = MutableStateFlow(NoteSortOrder.RELEVANCE)
+    private val isEmptyingTrash = MutableStateFlow(false)
     private val eventsChannel = Channel<NotesEvent>(Channel.BUFFERED)
     val events = eventsChannel.receiveAsFlow()
 
@@ -100,7 +101,13 @@ class NotesViewModel @Inject constructor(
         Triple(date, custom, sort)
     }
 
-    val uiState = combine(notesFlow, query, loading, filterState) { notes, currentQuery, isLoading, filters ->
+    val uiState = combine(
+        notesFlow,
+        query,
+        loading,
+        filterState,
+        isEmptyingTrash,
+    ) { notes, currentQuery, isLoading, filters, emptying ->
         NotesUiState(
             filter = filter,
             query = currentQuery,
@@ -109,6 +116,7 @@ class NotesViewModel @Inject constructor(
             dateFilter = filters.first,
             customDateRange = filters.second,
             sortOrder = filters.third,
+            isEmptyingTrash = emptying,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -194,11 +202,16 @@ class NotesViewModel @Inject constructor(
     }
 
     fun emptyTrash() {
+        if (!isEmptyingTrash.compareAndSet(expect = false, update = true)) return
         viewModelScope.launch {
-            runCatching {
-                emptyTrash()
-                eventsChannel.send(NotesEvent.TrashEmptied)
-            }.onFailure { eventsChannel.send(NotesEvent.Failure) }
+            try {
+                runCatching {
+                    emptyTrashUseCase()
+                    eventsChannel.send(NotesEvent.TrashEmptied)
+                }.onFailure { eventsChannel.send(NotesEvent.Failure) }
+            } finally {
+                isEmptyingTrash.value = false
+            }
         }
     }
 

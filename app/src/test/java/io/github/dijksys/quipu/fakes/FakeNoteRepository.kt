@@ -18,11 +18,14 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
 
     var failWrites: Boolean = false
     var writeGate: CompletableDeferred<Unit>? = null
+    var emptyTrashGate: CompletableDeferred<Unit>? = null
     var upsertCount: Int = 0
         private set
     var pinCount: Int = 0
         private set
     var archiveCount: Int = 0
+        private set
+    var emptyTrashCount: Int = 0
         private set
 
     val currentNotes: List<Note> get() = notes.value.values.toList()
@@ -116,6 +119,8 @@ class FakeNoteRepository(initialNotes: List<Note> = emptyList()) : NoteRepositor
     }
 
     override suspend fun emptyTrash() {
+        emptyTrashGate?.await()
+        emptyTrashCount++
         notes.update { stored -> stored.filterValues { it.deletedAt == null } }
     }
 

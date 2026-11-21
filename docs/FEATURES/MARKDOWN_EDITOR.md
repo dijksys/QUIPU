@@ -54,6 +54,13 @@ estilos y el mapeo de posiciones. `MarkdownVisualTransformation` lo traduce a
 - El código inline usa tipografía monoespaciada y un fondo discreto.
 - Los bloques de código conservan sus delimitadores y usan fondo diferenciado.
 
+Las casillas son interactivas directamente en el campo. `MarkdownVisualPlan`
+expone el rango visual de cada `☐`/`☑`, su estado y el índice de línea del
+Markdown original. Un toque corto sobre la casilla ejecuta
+`MarkdownChecklist.toggleItem()`, actualiza el `TextFieldValue`, refresca la
+representación y pasa por `onContentChange` para el autoguardado. Un toque sobre
+el texto, un arrastre o una pulsación larga no cambian la casilla.
+
 La sintaxis incompleta se conserva literalmente. Los delimitadores no se
 eliminan del texto persistido; solo se ocultan visualmente cuando la estructura
 está completa. Editar cerca de un delimitador no altera el contenido fuente.
@@ -223,8 +230,6 @@ original, incluidas las URLs y las palabras dentro de enlaces Markdown.
 - No hay resaltado sintáctico complejo en bloques de código.
 - No se admiten listas anidadas ni tablas.
 - No hay imágenes ni contenido HTML.
-- No hay edición directa de casillas en el campo: se modifica el marcador
-  `[ ]` / `[x]` escribiendo o usando la herramienta.
 - El formato visual oculta delimitadores; editar justo en sus bordes puede
   requerir precisión.
 - La barra se desplaza horizontalmente en pantallas estrechas.

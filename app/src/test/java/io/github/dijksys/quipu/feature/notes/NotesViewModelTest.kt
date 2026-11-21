@@ -11,6 +11,7 @@ import io.github.dijksys.quipu.domain.usecase.notes.SearchNotesUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.TogglePinNoteUseCase
 import io.github.dijksys.quipu.fakes.FakeNoteRepository
 import io.github.dijksys.quipu.fakes.TestClock
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -210,6 +211,32 @@ class NotesViewModelTest {
         assertFalse(viewModel.uiState.value.isSearching)
     }
 
+    @Test
+    fun `empty trash is idempotent and removes only trashed notes`() = runTest(dispatcher) {
+        repository.preload(
+            note("active", "Activa"),
+            note("trashed", "Eliminada", deletedAt = clock.currentTime),
+        )
+        val gate = CompletableDeferred<Unit>()
+        repository.emptyTrashGate = gate
+        val viewModel = createViewModel(filter = "TRASH")
+        backgroundScope.launch { viewModel.uiState.collect { } }
+        advanceUntilIdle()
+
+        viewModel.emptyTrash()
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isEmptyingTrash)
+
+        viewModel.emptyTrash()
+        runCurrent()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.emptyTrashCount)
+        assertFalse(viewModel.uiState.value.isEmptyingTrash)
+        assertEquals(listOf("active"), repository.currentNotes.map { it.id })
+    }
+
     private fun createViewModel(
         filter: String = "ACTIVE",
         query: String? = null,
@@ -228,7 +255,7 @@ class NotesViewModelTest {
             deleteNote = DeleteNoteUseCase(repository, clock),
             restoreNote = RestoreNoteUseCase(repository, clock),
             permanentlyDeleteNote = PermanentlyDeleteNoteUseCase(repository),
-            emptyTrash = EmptyTrashUseCase(repository),
+            emptyTrashUseCase = EmptyTrashUseCase(repository),
             clock = clock,
         )
     }

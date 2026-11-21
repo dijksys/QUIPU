@@ -374,6 +374,7 @@ fun QuipuConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     destructive: Boolean = false,
+    confirmEnabled: Boolean = true,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -382,7 +383,7 @@ fun QuipuConfirmDialog(
         title = { Text(text = title, style = MaterialTheme.typography.headlineSmall) },
         text = { Text(text = message, style = MaterialTheme.typography.bodyMedium) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            TextButton(onClick = onConfirm, enabled = confirmEnabled) {
                 Text(
                     text = confirmLabel,
                     color = if (destructive) {

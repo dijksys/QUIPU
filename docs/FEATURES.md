@@ -1,6 +1,6 @@
 # Funcionalidades
 
-Estado de QUIPU 2.0.1.
+Estado de QUIPU 2.1.3.
 
 ## Implementado
 
@@ -23,6 +23,10 @@ Estado de QUIPU 2.0.1.
 - [x] Editor único con formato visual en tiempo real, sin selector de vista previa.
 - [x] Barra acoplada al teclado y estable al aplicar encabezados.
 - [x] Detección automática de URLs y apertura en el navegador externo.
+- [x] Casillas interactivas desde el editor y autoguardado del cambio.
+- [x] ANR de papelera corregido y protegido contra ejecuciones simultáneas.
+- [x] Pruebas de vaciado con 1 000 notas, etiquetas y recordatorios.
+- [x] Diagnóstico documentado en `docs/DIAGNOSTICS/TRASH_ANR.md`.
 - [x] Fechas de creación y última modificación visibles.
 - [x] Listados de activas, archivadas y papelera.
 
