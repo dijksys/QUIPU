@@ -1,5 +1,7 @@
 package io.github.dijksys.quipu.domain.model
 
+import io.github.dijksys.quipu.domain.formatting.MarkdownTextExtractor
+
 /**
  * Representación de una nota independiente de Room y de Android.
  * Las fechas se almacenan en epoch millis (UTC).
@@ -21,6 +23,5 @@ data class Note(
     val displayTitle: String
         get() = title.trim().ifBlank { "Sin título" }
 
-    val preview: String
-        get() = content.trim().replace(Regex("\\s+"), " ").take(180)
+    val preview: String = MarkdownTextExtractor.preview(content)
 }

@@ -2,6 +2,7 @@ package io.github.dijksys.quipu.feature.notes
 
 import androidx.lifecycle.SavedStateHandle
 import io.github.dijksys.quipu.domain.model.Note
+import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
 import io.github.dijksys.quipu.domain.usecase.notes.ArchiveNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.CreateNoteUseCase
 import io.github.dijksys.quipu.domain.usecase.notes.DeleteNoteUseCase
@@ -356,6 +357,25 @@ class NoteEditorViewModelTest {
 
         assertEquals("Borrador restaurado", repository.getStored("n1")!!.title)
         assertEquals("Contenido restaurado", repository.getStored("n1")!!.content)
+        assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
+    }
+
+    @Test
+    fun `markdown and checkbox edits are autosaved`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        runCurrent()
+        viewModel.onTitleChange("Markdown")
+        viewModel.onContentChange("# Título\n\n- [ ] Uno")
+        advanceUntilIdle()
+
+        val noteId = repository.currentNotes.single().id
+        assertEquals("# Título\n\n- [ ] Uno", repository.getStored(noteId)!!.content)
+
+        val checked = MarkdownChecklist.toggleItem(viewModel.uiState.value.content, 2)
+        viewModel.onContentChange(checked)
+        advanceUntilIdle()
+
+        assertEquals("# Título\n\n- [x] Uno", repository.getStored(noteId)!!.content)
         assertEquals(NoteSaveStatus.SAVED, viewModel.uiState.value.saveStatus)
     }
 

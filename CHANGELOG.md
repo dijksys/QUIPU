@@ -2,6 +2,17 @@
 
 Todas las fechas están en formato ISO 8601.
 
+## [Unreleased]
+
+### Añadido
+
+- Editor de notas con sintaxis Markdown: negritas, cursivas, encabezados,
+  listas, casillas, enlaces y bloques de código.
+- Barra de herramientas con acciones basadas en la selección y conservación
+  del cursor.
+- Vista previa Markdown con casillas interactivas y enlaces externos seguros.
+- Extractos de notas sin sintaxis Markdown en Inicio y en el listado.
+
 ## [1.2.0] - 2026-11-20
 
 ### Mejorado

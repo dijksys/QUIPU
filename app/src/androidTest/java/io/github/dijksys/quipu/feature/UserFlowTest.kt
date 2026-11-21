@@ -2,6 +2,7 @@ package io.github.dijksys.quipu.feature
 
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -11,6 +12,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextInputSelection
+import androidx.compose.ui.text.TextRange
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -65,6 +68,34 @@ class UserFlowTest {
             context.getString(R.string.home_subtitle),
         )
         composeRule.onNodeWithTag("home_new_note").assertIsDisplayed()
+    }
+
+    @Test
+    fun markdownFormattingKeepsSelectionAndPreview() {
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("home_new_note").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("home_new_note").performClick()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("note_content").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithTag("note_title").performTextInput("Markdown E2E")
+        composeRule.onNodeWithTag("note_content").performTextInput("Hola mundo")
+        composeRule.onNodeWithTag("note_content")
+            .performTextInputSelection(TextRange(5, 10))
+        composeRule.onNodeWithTag("markdown_bold").performClick()
+        composeRule.onNodeWithTag("note_content").assertTextContains("Hola **mundo**")
+
+        composeRule.onNodeWithTag("note_mode_preview").performClick()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("note_markdown_preview")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Hola mundo").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("note_mode_edit").performClick()
+        composeRule.onNodeWithTag("note_content").assertTextContains("Hola **mundo**")
     }
 
     @Test

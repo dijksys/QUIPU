@@ -3,8 +3,10 @@ package io.github.dijksys.quipu.feature.notes
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Unarchive
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,10 +27,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -36,15 +41,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -55,6 +66,10 @@ import io.github.dijksys.quipu.core.designsystem.components.QuipuConfirmDialog
 import io.github.dijksys.quipu.core.designsystem.components.QuipuEmptyState
 import io.github.dijksys.quipu.core.designsystem.components.QuipuTopAppBar
 import io.github.dijksys.quipu.core.designsystem.theme.QuipuSpacing
+import io.github.dijksys.quipu.domain.formatting.MarkdownChecklist
+import io.github.dijksys.quipu.domain.formatting.MarkdownEditResult
+import io.github.dijksys.quipu.domain.formatting.MarkdownFormatting
+import io.github.dijksys.quipu.domain.formatting.MarkdownSelection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -68,6 +83,17 @@ fun NoteEditorScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val focusRequester = remember { FocusRequester() }
+    val contentFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val uriHandler = LocalUriHandler.current
+    var editorValue by remember(state.noteId) {
+        mutableStateOf(TextFieldValue(state.content))
+    }
+    var isPreview by rememberSaveable(state.noteId) { mutableStateOf(false) }
+    var showLinkDialog by remember { mutableStateOf(false) }
+    var linkLabel by remember { mutableStateOf("") }
+    var linkUrl by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
 
@@ -75,6 +101,78 @@ fun NoteEditorScreen(
     val messageUnpinned = stringResource(R.string.note_unpinned)
     val messageError = stringResource(R.string.error_generic)
     val messageWriteBeforeReminder = stringResource(R.string.note_write_before_reminder)
+    val messageLinkError = stringResource(R.string.note_markdown_link_error)
+
+    LaunchedEffect(state.content, state.isLoading) {
+        if (!state.isLoading && editorValue.text != state.content) {
+            val start = editorValue.selection.start.coerceIn(0, state.content.length)
+            val end = editorValue.selection.end.coerceIn(0, state.content.length)
+            editorValue = TextFieldValue(
+                text = state.content,
+                selection = TextRange(start, end),
+            )
+        }
+    }
+
+    val currentSelection = {
+        val start = minOf(editorValue.selection.start, editorValue.selection.end)
+        val end = maxOf(editorValue.selection.start, editorValue.selection.end)
+        MarkdownSelection(start, end)
+    }
+
+    val applyContent: (MarkdownEditResult) -> Unit = { result ->
+        editorValue = TextFieldValue(
+            text = result.text,
+            selection = TextRange(result.selection.start, result.selection.end),
+        )
+        if (result.text != state.content) {
+            viewModel.onContentChange(result.text)
+        }
+        if (!isPreview) {
+            contentFocusRequester.requestFocus()
+        }
+    }
+
+    val openLinkDialog: () -> Unit = {
+        val selection = currentSelection()
+        linkLabel = if (selection.start != selection.end) {
+            editorValue.text.substring(selection.start, selection.end)
+        } else {
+            ""
+        }
+        linkUrl = ""
+        showLinkDialog = true
+    }
+
+    val applyToolbarAction: (MarkdownToolbarAction) -> Unit = { action ->
+        when (action) {
+            MarkdownToolbarAction.BOLD -> applyContent(
+                MarkdownFormatting.toggleBold(editorValue.text, currentSelection()),
+            )
+
+            MarkdownToolbarAction.ITALIC -> applyContent(
+                MarkdownFormatting.toggleItalic(editorValue.text, currentSelection()),
+            )
+
+            MarkdownToolbarAction.UNORDERED_LIST -> applyContent(
+                MarkdownFormatting.applyUnorderedList(editorValue.text, currentSelection()),
+            )
+
+            MarkdownToolbarAction.ORDERED_LIST -> applyContent(
+                MarkdownFormatting.applyOrderedList(editorValue.text, currentSelection()),
+            )
+
+            MarkdownToolbarAction.CHECKLIST -> applyContent(
+                MarkdownFormatting.applyChecklist(editorValue.text, currentSelection()),
+            )
+
+            MarkdownToolbarAction.CODE_BLOCK -> applyContent(
+                MarkdownFormatting.insertCodeBlock(editorValue.text, currentSelection()),
+            )
+
+            MarkdownToolbarAction.LINK -> openLinkDialog()
+        }
+    }
 
     val leaveEditor: () -> Unit = {
         scope.launch(Dispatchers.Main.immediate) {
@@ -253,26 +351,93 @@ fun NoteEditorScreen(
                     colors = transparentTextFieldColors(),
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                TextField(
-                    value = state.content,
-                    onValueChange = viewModel::onContentChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .testTag("note_content"),
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.note_editor_content_placeholder),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        )
+                if (!isPreview) {
+                    Spacer(Modifier.height(QuipuSpacing.xs))
+                    NoteMarkdownToolbar(
+                        onAction = applyToolbarAction,
+                        onHeading = { level ->
+                            applyContent(
+                                MarkdownFormatting.applyHeading(
+                                    editorValue.text,
+                                    currentSelection(),
+                                    level,
+                                ),
+                            )
+                        },
+                    )
+                }
+                Spacer(Modifier.height(QuipuSpacing.xs))
+                NoteEditorModeToggle(
+                    isPreview = isPreview,
+                    onEdit = {
+                        if (isPreview) {
+                            isPreview = false
+                            contentFocusRequester.requestFocus()
+                        }
                     },
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                    ),
-                    colors = transparentTextFieldColors(),
+                    onPreview = {
+                        if (!isPreview) {
+                            isPreview = true
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    },
                 )
+                Spacer(Modifier.height(QuipuSpacing.xs))
+                if (isPreview) {
+                    NoteMarkdownPreview(
+                        markdown = state.content,
+                        onToggleChecklist = { lineIndex ->
+                            val updated = MarkdownChecklist.toggleItem(state.content, lineIndex)
+                            if (updated != state.content) {
+                                val caret = editorValue.selection.start.coerceIn(0, updated.length)
+                                editorValue = TextFieldValue(
+                                    text = updated,
+                                    selection = TextRange(caret, caret),
+                                )
+                                viewModel.onContentChange(updated)
+                            }
+                        },
+                        onOpenLink = { url ->
+                            runCatching { uriHandler.openUri(url) }
+                                .onFailure {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(messageLinkError)
+                                    }
+                                }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    )
+                } else {
+                    TextField(
+                        value = editorValue,
+                        onValueChange = { value ->
+                            editorValue = value
+                            if (value.text != state.content) {
+                                viewModel.onContentChange(value.text)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .focusRequester(contentFocusRequester)
+                            .testTag("note_content"),
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.note_editor_content_placeholder),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                        ),
+                        colors = transparentTextFieldColors(),
+                    )
+                }
                 NoteSaveStatusFooter(
                     saveStatus = state.saveStatus,
                     createdAt = state.createdAt,
@@ -295,6 +460,63 @@ fun NoteEditorScreen(
             },
             onDismiss = { showDeleteDialog = false },
             destructive = true,
+        )
+    }
+
+    if (showLinkDialog) {
+        val linkIsValid = MarkdownFormatting.isValidHttpUrl(linkUrl)
+        AlertDialog(
+            onDismissRequest = { showLinkDialog = false },
+            title = { Text(stringResource(R.string.note_markdown_link_title)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = linkLabel,
+                        onValueChange = { linkLabel = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.note_markdown_link_label)) },
+                        singleLine = true,
+                    )
+                    Spacer(Modifier.height(QuipuSpacing.sm))
+                    OutlinedTextField(
+                        value = linkUrl,
+                        onValueChange = { linkUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.note_markdown_link_url)) },
+                        singleLine = true,
+                        isError = linkUrl.isNotBlank() && !linkIsValid,
+                        supportingText = if (linkUrl.isNotBlank() && !linkIsValid) {
+                            {
+                                Text(stringResource(R.string.note_markdown_link_invalid))
+                            }
+                        } else {
+                            null
+                        },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = linkIsValid,
+                    onClick = {
+                        val result = MarkdownFormatting.insertLink(
+                            editorValue.text,
+                            currentSelection(),
+                            linkLabel,
+                            linkUrl,
+                        )
+                        showLinkDialog = false
+                        applyContent(result)
+                    },
+                ) {
+                    Text(stringResource(R.string.note_markdown_link_insert))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLinkDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
         )
     }
 }
