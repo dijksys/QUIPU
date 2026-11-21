@@ -4,11 +4,12 @@ Aplicación Android nativa para gestionar notas personales y recordatorios. Est�
 diseñada para funcionar **completamente sin conexión**, con almacenamiento local
 y una interfaz minimalista en español.
 
-QUIPU 2.0.1 está implementado: CRUD de notas con guardado automático, papelera,
+QUIPU 2.1.3 está implementado: CRUD de notas con guardado automático, papelera,
 archivado, búsqueda FTS con etiquetas, recordatorios con alarmas locales,
 notificaciones, reprogramación tras reinicios, ajustes de tema y pruebas
 unitarias e instrumentadas. El editor aplica formato Markdown en tiempo real,
-detecta URLs automáticamente y acopla su barra al teclado.
+detecta URLs automáticamente, permite marcar casillas y acopla su barra al
+teclado.
 
 En una instalación nueva, QUIPU muestra una pantalla de bienvenida y no vuelve
 a mostrarla después de pulsar Comenzar. Las instalaciones actualizadas desde
@@ -17,7 +18,7 @@ versiones anteriores conservan sus datos y omiten la bienvenida.
 ## Identidad de la aplicación
 
 - **Application ID:** `io.github.dijksys.quipu`
-- **Versión estable:** `2.0.1`
+- **Versión estable:** `2.1.3`
 - **Nombre visible:** QUIPU
 - **Android mínimo:** 8.0 (API 26)
 
@@ -77,10 +78,10 @@ Las pruebas instrumentadas requieren un emulador o dispositivo conectado
 minuto porque espera el disparo real de AlarmManager y la publicación de la
 notificación.
 
-Estado verificado en QUIPU 2.0.1: **174 pruebas unitarias** y **62 pruebas
-instrumentadas** en un Motorola moto g34 5G con Android 15 (API 35), todas en
-verde. `lintDebug` no reporta errores. También se verificaron manualmente la
-persistencia, la búsqueda FTS, el editor y la reprogramación de alarmas.
+Estado verificado en QUIPU 2.1.3: **179 pruebas unitarias** y **70 pruebas
+instrumentadas** en emulador API 37, más validación manual en Motorola moto g34
+5G. `lintDebug` no reporta errores. También se verificaron la persistencia, la
+búsqueda FTS, el editor y el vaciado de papelera.
 
 ## Permisos
 
@@ -149,6 +150,8 @@ están en [docs/FEATURES.md](docs/FEATURES.md).
 - [docs/FEATURES/MARKDOWN_EDITOR.md](docs/FEATURES/MARKDOWN_EDITOR.md)
 - [docs/DEVELOPMENT/GITHUB_ACTIONS.md](docs/DEVELOPMENT/GITHUB_ACTIONS.md)
 - [docs/BRANDING.md](docs/BRANDING.md)
+- [docs/releases/v2.1.3.md](docs/releases/v2.1.3.md)
+- [docs/DIAGNOSTICS/TRASH_ANR.md](docs/DIAGNOSTICS/TRASH_ANR.md)
 - [docs/releases/v2.0.1.md](docs/releases/v2.0.1.md)
 - [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md)
 - [docs/releases/v1.1.7.md](docs/releases/v1.1.7.md)

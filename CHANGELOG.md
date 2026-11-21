@@ -2,6 +2,35 @@
 
 Todas las fechas están en formato ISO 8601.
 
+## [Unreleased]
+
+## [2.1.3] - 2026-11-21
+
+### Corregido
+
+- Las casillas Markdown se pueden marcar y desmarcar directamente desde el
+  editor, sin cambiar de modo.
+- El cambio de casilla actualiza el Markdown original, la vista y el
+  autoguardado.
+- Se eliminó la recursión infinita que provocaba ANR y `OutOfMemoryError` al
+  vaciar la papelera.
+- El vaciado de papelera es idempotente y no admite ejecuciones simultáneas.
+- El botón y la confirmación se deshabilitan y se muestra progreso durante el
+  vaciado.
+- La eliminación conserva las notas activas y archivadas, limpia las relaciones
+  de etiquetas y desvincula los recordatorios sin borrarlos.
+- El índice FTS queda sincronizado tras el vaciado.
+
+### Verificación
+
+- 179 pruebas unitarias.
+- 70 pruebas instrumentadas en emulador API 37 y validación manual en Motorola
+  Moto G34 5G.
+- Vaciado de 1 000 notas sintéticas sin ANR.
+- `PRAGMA integrity_check` y `PRAGMA foreign_key_check` correctos.
+- `:app:compileDebugKotlin`, `:app:testDebugUnitTest`, `:app:lintDebug`,
+  `:app:assembleDebug`, `:app:assembleRelease` y suite instrumentada.
+
 ## [2.0.1] - 2026-11-21
 
 ### Añadido
@@ -52,8 +81,6 @@ Todas las fechas están en formato ISO 8601.
   `:app:assembleDebug`, `:app:assembleRelease` y la suite instrumentada.
 - Migración 1 → 2 validada con notas existentes y relleno del índice FTS.
 - APK Release firmada verificada con el certificado de QUIPU.
-
-## [Unreleased]
 
 ## [1.2.0] - 2026-11-20
 
