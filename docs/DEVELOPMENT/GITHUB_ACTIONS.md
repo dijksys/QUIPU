@@ -66,9 +66,9 @@ comentarios indican la versión documentada:
 | `actions/checkout` | v7.0.1 |
 | `actions/setup-java` | v6.3.0 |
 | `gradle/actions/setup-gradle` | v6.4.1 |
-| `android-actions/setup-android` | v3.2.2 |
+| `android-actions/setup-android` | v4.0.4 |
 | `ReactiveCircus/android-emulator-runner` | v2.38.0 |
-| `actions/upload-artifact` | v4.6.2 |
+| `actions/upload-artifact` | v7.0.2 |
 
 Antes de actualizar una acción se debe revisar el repositorio oficial, verificar
 el SHA y ejecutar los workflows en una rama de trabajo.
