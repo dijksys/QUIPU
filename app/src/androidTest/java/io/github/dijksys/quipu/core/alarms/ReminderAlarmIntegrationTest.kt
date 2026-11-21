@@ -59,6 +59,7 @@ class ReminderAlarmIntegrationTest {
         database.close()
 
         val scheduler = AndroidReminderAlarmScheduler(context)
+        awaitExactAlarmPermission(scheduler)
         assertTrue(scheduler.canScheduleExactAlarms())
         val scheduleResult = scheduler.schedule(reminder)
         assertTrue(scheduleResult.scheduled)
@@ -116,6 +117,16 @@ class ReminderAlarmIntegrationTest {
             )
         }
         NotificationChannels(context).createChannels()
+    }
+
+    private suspend fun awaitExactAlarmPermission(
+        scheduler: AndroidReminderAlarmScheduler,
+        timeoutMillis: Long = 5_000,
+    ) {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (!scheduler.canScheduleExactAlarms() && System.currentTimeMillis() < deadline) {
+            delay(100)
+        }
     }
 
     private fun allowExactAlarms(
